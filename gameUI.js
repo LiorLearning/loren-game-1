@@ -73,12 +73,31 @@ export var GameUI = /*#__PURE__*/ function() {
                 this.gameInfoPanel.style.fontSize = '1.2em';
                 this.gameInfoPanel.innerHTML = `
       <h2 style="margin: 0 0 15px 0; font-size: 1.8em; color: #5ff;">Loren's Base Defense</h2>
-      <div style="font-size: 1.2em;">Current Wave: <span id="waveNumber">1</span></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="font-size: 1.2em;">Current Wave: <span id="waveNumber">1</span></div>
+        <button id="muteBtn" style="background: rgba(0, 100, 150, 0.7); border: 1px solid #5ff; color: white; border-radius: 5px; padding: 5px 10px; cursor: pointer; pointer-events: auto;">
+          <span id="muteIcon">🔊</span> Sound
+        </button>
+      </div>
       <div style="font-size: 1.2em;">Deployment Points: <span id="dpPoints">0</span></div>
       <div style="font-size: 1.2em;">Unit Name: <span id="displayUnitName">Duke</span> (<span id="playerPower">10</span> power)</div>
       <div style="font-size: 1.2em;">Enemy Name: Crabbies (<span id="enemyPower">10</span> power)</div>
     `;
                 this.uiContainer.appendChild(this.gameInfoPanel);
+
+                // Setup mute button functionality
+                document.getElementById('muteBtn').addEventListener('click', () => {
+                    if (this.game.audioManager) {
+                        this.game.audioManager.toggleMute();
+                        this.updateAllMuteButtons();
+                    }
+                });
+                
+                // Set initial mute button state
+                if (this.game.audioManager) {
+                    this.updateAllMuteButtons();
+                }
+                
                 // Create unit ammo counter
                 this.ammoCounter = document.createElement('div');
                 this.ammoCounter.style.position = 'absolute';
@@ -113,7 +132,57 @@ export var GameUI = /*#__PURE__*/ function() {
                     screen.style.pointerEvents = 'auto';
                     _this.uiContainer.appendChild(screen);
                     _this.screens[screenName] = screen;
+                    
+                    // Add mute button to screen if it's not already added to the game info panel
+                    if (screenName !== 'mathProblem') {  // Don't add to math problem screen as it's modal
+                        var muteBtn = document.createElement('button');
+                        muteBtn.id = `${screenName}MuteBtn`;
+                        muteBtn.className = 'screenMuteBtn';
+                        muteBtn.innerHTML = `<span class="muteBtnIcon">🔊</span>`;
+                        muteBtn.style.position = 'absolute';
+                        muteBtn.style.top = '20px';
+                        muteBtn.style.right = '20px';
+                        muteBtn.style.background = 'rgba(0, 100, 150, 0.7)';
+                        muteBtn.style.border = '1px solid #5ff';
+                        muteBtn.style.color = 'white';
+                        muteBtn.style.borderRadius = '50%';
+                        muteBtn.style.width = '40px';
+                        muteBtn.style.height = '40px';
+                        muteBtn.style.cursor = 'pointer';
+                        muteBtn.style.fontSize = '1.5em';
+                        muteBtn.style.display = 'flex';
+                        muteBtn.style.justifyContent = 'center';
+                        muteBtn.style.alignItems = 'center';
+                        muteBtn.style.zIndex = '200';
+                        
+                        muteBtn.addEventListener('click', function() {
+                            if (_this.game.audioManager) {
+                                _this.game.audioManager.toggleMute();
+                                _this.updateAllMuteButtons();
+                            }
+                        });
+                        
+                        screen.appendChild(muteBtn);
+                    }
                 });
+                
+                // Helper method to update all mute buttons
+                this.updateAllMuteButtons = function() {
+                    const isMuted = this.game.audioManager.isMuted;
+                    const icon = isMuted ? '🔇' : '🔊';
+                    
+                    // Update main mute button
+                    const mainMuteIcon = document.getElementById('muteIcon');
+                    if (mainMuteIcon) {
+                        mainMuteIcon.textContent = icon;
+                    }
+                    
+                    // Update all screen mute buttons
+                    document.querySelectorAll('.screenMuteBtn .muteBtnIcon').forEach(btn => {
+                        btn.textContent = icon;
+                    });
+                };
+                
                 this.setupStartScreen();
                 this.setupWaveCompleteScreen();
                 this.setupGameOverScreen();

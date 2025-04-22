@@ -190,6 +190,12 @@ export var Game = /*#__PURE__*/ function() {
             value: function start() {
                 this.gameUI.showStartScreen();
                 this.audioManager.toggleBackgroundMusic(true);
+                
+                // Initialize all mute buttons to reflect current audio state
+                if (this.gameUI.updateAllMuteButtons) {
+                    this.gameUI.updateAllMuteButtons();
+                }
+                
                 this.animate();
             }
         },

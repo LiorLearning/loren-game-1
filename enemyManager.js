@@ -124,7 +124,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 );
                 
                 // Set power: double for leader
-                const crabPower = isLeader ? this.enemyPower * 3 : this.enemyPower;
+                const crabPower = isLeader ? this.enemyPower * 2 : this.enemyPower;
                 // Create sprite material
                 var spriteMaterial = new THREE.SpriteMaterial({
                     map: crabTexture,
@@ -194,7 +194,9 @@ export var EnemyManager = /*#__PURE__*/ function() {
                     var enemy = _this.enemies[i];
                     // Simple distance-based collision check
                     var distance = enemy.position.distanceTo(projectile.position);
-                    if (distance < 30) {
+                    // Increased collision radius for leader enemies (big crabs)
+                    var collisionRadius = enemy.isLeader ? 80 : 50;
+                    if (distance < collisionRadius) {
                         // Remove projectile
                         _this.game.scene.remove(projectile);
                         var index = _this.game.activeUnit.projectiles.indexOf(projectile);
