@@ -152,8 +152,8 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 const unitPower = this.unitPowerForWave || 10;
                 const hitsRequired = Math.ceil(crabPower / unitPower);
                 // Calculate speed multiplier: 1.1^level, capped at 1.5x
-                const baseSpeed = isLeader ? 62.5 : 87.5;
-                const speedMultiplier = Math.min(1.5, Math.pow(1.1, this.currentWave - 1));
+                const baseSpeed = isLeader ? 50 : 62.5;
+                const speedMultiplier = Math.min(1.2, Math.pow(1.05, this.currentWave - 1));
                 const crabSpeed = baseSpeed * speedMultiplier;
                 return {
                     mesh: enemyGroup,
