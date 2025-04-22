@@ -28,7 +28,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
         _class_call_check(this, EnemyManager);
         this.game = game;
         this.enemies = [];
-        this.enemiesPerWave = 6; // 5 regular + 1 leader
+        this.enemiesPerWave = 5; // 4 regular + 1 leader
         this.spawnRate = 2000; // Spawn every 2 seconds
         this.enemiesSpawned = 0;
         this.enemiesDefeated = 0;
@@ -44,7 +44,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 this.enemies = [];
                 this.spawnX = this.game.width * 0.48;
                 this.spawnRate = 2000;
-                this.enemiesPerWave = 6;
+                this.enemiesPerWave = 5;
                 this.enemiesSpawned = 0;
                 this.enemiesDefeated = 0;
             }
@@ -124,7 +124,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 );
                 
                 // Set power: double for leader
-                const crabPower = isLeader ? this.enemyPower * 2 : this.enemyPower;
+                const crabPower = isLeader ? this.enemyPower * 1.5 : this.enemyPower;
                 // Create sprite material
                 var spriteMaterial = new THREE.SpriteMaterial({
                     map: crabTexture,
