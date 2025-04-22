@@ -164,6 +164,9 @@ export var Unit = /*#__PURE__*/ function() {
                 this.position.copy(unitGroup.position);
                 this.mesh = unitGroup;
                 this.game.scene.add(this.mesh);
+                
+                // Set initial direction to right (toward crabs)
+                this.lastMoveDirection = 'right';
             }
         },
         {
@@ -213,11 +216,8 @@ export var Unit = /*#__PURE__*/ function() {
                 if (key === ' ' && this.ammo > 0) {
                     this.shoot();
                 }
-                // Direction changes
-                if (key === 'ArrowLeft') {
-                    this.changeDirection('left');
-                    this.lastMoveDirection = 'left';
-                }
+                // Remove left direction capability
+                // Always force right direction (where the crabs are coming from)
                 if (key === 'ArrowRight') {
                     this.changeDirection('right');
                     this.lastMoveDirection = 'right';
@@ -241,29 +241,38 @@ export var Unit = /*#__PURE__*/ function() {
                     color: 0xffff00
                 });
                 var projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+                
                 // Set position to start from the turret
                 projectile.position.copy(this.position);
                 var dukeSprite = this.mesh.children[0];
-                var currentDirection = this.lastMoveDirection === 'right' ? 1 : -1;
-                // Force sync sprite direction with current movement direction
+                
+                // Always shoot right (where crabs come from)
+                var currentDirection = 1; // 1 = right
+                
+                // Force sync sprite direction with right-facing direction
                 dukeSprite.scale.x = dukeSprite.userData.originalScale.x * currentDirection;
                 dukeSprite.userData.originalScale.sign = currentDirection;
-                // Adjust spawn position and set velocity based on current facing direction
-                projectile.position.x += currentDirection > 0 ? 60 : -60;
+                
+                // Adjust spawn position for right-facing direction
+                projectile.position.x += 60; // positive = right
                 projectile.position.y = this.position.y;
-                // Ensure velocity matches the sprite's facing direction
+                
+                // Set velocity for right-facing direction
                 projectile.userData = {
-                    velocity: currentDirection * 25,
+                    velocity: 25, // positive = right
                     direction: currentDirection
                 };
+                
                 // Debug visualization - show projectile direction
-                var arrowHelper = new THREE.ArrowHelper(new THREE.Vector3(currentDirection, 0, 0), projectile.position, 50, currentDirection > 0 ? 0x00ff00 : 0xff0000, 10, 5);
+                var arrowHelper = new THREE.ArrowHelper(new THREE.Vector3(currentDirection, 0, 0), projectile.position, 50, 0x00ff00, 10, 5);
                 this.game.scene.add(arrowHelper);
                 setTimeout(function() {
                     return _this.game.scene.remove(arrowHelper);
                 }, 100);
+                
                 this.game.scene.add(projectile);
                 this.projectiles.push(projectile);
+                
                 // Reduce ammo
                 this.ammo--;
                 this.game.gameUI.updateUnitInfo(this.type, this.ammo);

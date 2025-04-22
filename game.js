@@ -289,6 +289,13 @@ export var Game = /*#__PURE__*/ function() {
                     this.activeUnit = null;
                 }
                 
+                // Reset base health after each wave
+                if (this.base) {
+                    this.base.health = this.base.maxHealth;
+                    this.base.updateHealthBar();
+                    this.gameUI.updateBaseHealth(this.base.health);
+                }
+                
                 // Show store
                 this.showStore();
             }
