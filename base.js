@@ -26,6 +26,7 @@ export var Base = /*#__PURE__*/ function() {
         this.health = 10;
         this.maxHealth = 10;
         this.position = new THREE.Vector3(-this.game.width * 0.38, 0, 0); // Moved base further right from 0.42
+        this.baseLevel = 0; // Start with base level 0
         this.createBaseMesh();
     }
     _create_class(Base, [
@@ -35,9 +36,24 @@ export var Base = /*#__PURE__*/ function() {
                 // Create base structure
                 var baseGroup = new THREE.Group();
                 // Main structure
-                // Load base texture
+                this.loadBaseTexture(baseGroup);
+                
+                // Base positioning
+                baseGroup.position.copy(this.position);
+                this.mesh = baseGroup;
+                this.game.scene.add(this.mesh);
+                // Add health bar
+                this.createHealthBar();
+            }
+        },
+        {
+            key: "loadBaseTexture",
+            value: function loadBaseTexture(baseGroup) {
+                var _this = this;
+                // Load base texture based on current level
                 var textureLoader = new THREE.TextureLoader();
-                textureLoader.load('./assets/base.png', function(texture) {
+                const imageId = this.baseLevel < 4 ? this.baseLevel : 4;
+                textureLoader.load(`./assets/base${imageId}.png`, function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     texture.minFilter = THREE.LinearFilter;
                     // Create sprite material
@@ -51,16 +67,18 @@ export var Base = /*#__PURE__*/ function() {
                     });
                     // Create base sprite
                     var baseSprite = new THREE.Sprite(spriteMaterial);
-                    baseSprite.scale.set(500, 500, 1); // Reduced from 800 to 500
+                    baseSprite.scale.set(450, 450, 1); // Reduced from 500 to 450
                     baseSprite.center.set(0.5, 0.5);
+                    
+                    // Clear any existing sprites first
+                    while(baseGroup.children.length > 0) {
+                        baseGroup.remove(baseGroup.children[0]);
+                    }
+                    
                     baseGroup.add(baseSprite);
+                }, undefined, function(error) {
+                    console.error('Error loading base texture:', error);
                 });
-                // Base positioning
-                baseGroup.position.copy(this.position);
-                this.mesh = baseGroup;
-                this.game.scene.add(this.mesh);
-                // Add health bar
-                this.createHealthBar();
             }
         },
         {
@@ -142,11 +160,96 @@ export var Base = /*#__PURE__*/ function() {
             key: "flashDamage",
             value: function flashDamage() {
                 var _this = this;
-                var originalColor = this.mesh.children[0].material.color.clone();
-                this.mesh.children[0].material.color.set(0xff0000);
-                setTimeout(function() {
-                    _this.mesh.children[0].material.color.copy(originalColor);
-                }, 200);
+                if (this.mesh.children.length > 0 && this.mesh.children[0].material) {
+                    var originalColor = this.mesh.children[0].material.color.clone();
+                    this.mesh.children[0].material.color.set(0xff0000);
+                    setTimeout(function() {
+                        if (_this.mesh.children.length > 0 && _this.mesh.children[0].material) {
+                            _this.mesh.children[0].material.color.copy(originalColor);
+                        }
+                    }, 200);
+                }
+            }
+        },
+        {
+            key: "upgradeBase",
+            value: function upgradeBase() {
+                // Maximum level is 5 (base0 to base5)
+                if (this.baseLevel < 5) {
+                    this.baseLevel++;
+                    
+                    // Show upgrade animation/effect
+                    this.showUpgradeEffect();
+                    
+                    // Load new texture based on level (base0.png -> base1.png -> base2.png -> base3.png -> base4.png)
+                    if (this.mesh) {
+                        this.loadBaseTexture(this.mesh);
+                    }
+                    
+                    // Increase max health with each upgrade
+                    this.maxHealth += 10;
+                    this.health = this.maxHealth;
+                    this.updateHealthBar();
+                    
+                    return true;
+                }
+                return false;
+            }
+        },
+        {
+            key: "showUpgradeEffect",
+            value: function showUpgradeEffect() {
+                var _this = this;
+                
+                // Create a flash effect on upgrade
+                if (this.mesh.children.length > 0 && this.mesh.children[0].material) {
+                    // Store original color
+                    var originalColor = this.mesh.children[0].material.color.clone();
+                    
+                    // Flash sequence
+                    var flashColors = [0x55ffff, 0xffffff, 0x55ffff, 0xffffff, 0x55ffff];
+                    var flashDelay = 100;
+                    
+                    flashColors.forEach(function(color, index) {
+                        setTimeout(function() {
+                            if (_this.mesh.children.length > 0 && _this.mesh.children[0].material) {
+                                _this.mesh.children[0].material.color.set(color);
+                            }
+                        }, flashDelay * index);
+                    });
+                    
+                    // Reset to original color
+                    setTimeout(function() {
+                        if (_this.mesh.children.length > 0 && _this.mesh.children[0].material) {
+                            _this.mesh.children[0].material.color.copy(originalColor);
+                        }
+                    }, flashDelay * flashColors.length);
+                    
+                    // Create text notification
+                    const upgradeText = document.createElement('div');
+                    upgradeText.textContent = `BASE UPGRADED! Level ${this.baseLevel}`;
+                    upgradeText.style.position = 'absolute';
+                    upgradeText.style.left = '50%';
+                    upgradeText.style.top = '40%';
+                    upgradeText.style.transform = 'translate(-50%, -50%)';
+                    upgradeText.style.color = '#5ff';
+                    upgradeText.style.fontSize = '28px';
+                    upgradeText.style.fontWeight = 'bold';
+                    upgradeText.style.textShadow = '2px 2px 4px rgba(0,0,0,0.7)';
+                    upgradeText.style.zIndex = '1000';
+                    upgradeText.style.padding = '15px';
+                    upgradeText.style.borderRadius = '10px';
+                    upgradeText.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                    
+                    document.body.appendChild(upgradeText);
+                    
+                    // Remove text after a delay
+                    setTimeout(function() {
+                        if (upgradeText.parentNode) {
+                            upgradeText.parentNode.removeChild(upgradeText);
+                        }
+                    }, 3000);
+                }
             }
         }
     ]);

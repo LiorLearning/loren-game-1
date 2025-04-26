@@ -279,6 +279,11 @@ export var Game = /*#__PURE__*/ function() {
                 this.deploymentPoints += waveDP;
                 this.gameUI.updateDP(this.deploymentPoints);
                 
+                // Upgrade base after each wave
+                if (this.base) {
+                    this.base.upgradeBase();
+                }
+                
                 // Increment wave number
                 this.currentWave++;
                 
@@ -432,10 +437,17 @@ export var Game = /*#__PURE__*/ function() {
                 this.gameUI.updateWaveInfo(this.currentWave);
                 this.gameUI.updateDP(this.deploymentPoints);
                 
-                // Reset base health
+                // Reset base health and level
                 if (this.base) {
+                    this.base.baseLevel = 0;
+                    this.base.maxHealth = 10;
                     this.base.health = this.base.maxHealth;
                     this.base.updateHealthBar();
+                    
+                    // Reload base texture for level 0
+                    if (this.base.mesh) {
+                        this.base.loadBaseTexture(this.base.mesh);
+                    }
                 }
                 
                 return true;
