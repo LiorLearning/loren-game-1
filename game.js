@@ -125,7 +125,7 @@ export var Game = /*#__PURE__*/ function() {
                 // Scene setup
                 this.scene = new THREE.Scene();
                 var textureLoader = new THREE.TextureLoader();
-                textureLoader.load('https://play.rosebud.ai/assets/7c1dcc29-f6fa-4374-ab7c-9abf1263782b.png?7ZXT', function(texture) {
+                textureLoader.load('./assets/background.png', function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     _this.scene.background = texture;
                 });

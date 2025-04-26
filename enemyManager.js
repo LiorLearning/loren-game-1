@@ -109,7 +109,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 // Load crab texture
                 var textureLoader = new THREE.TextureLoader();
                 textureLoader.setCrossOrigin('Anonymous');
-                var crabTexture = textureLoader.load('https://play.rosebud.ai/assets/crab.png?kHQO', 
+                var crabTexture = textureLoader.load('./assets/crab.png', 
                     // Success callback
                     (texture) => {
                         texture.colorSpace = THREE.SRGBColorSpace;

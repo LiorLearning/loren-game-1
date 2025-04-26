@@ -44,7 +44,7 @@ export var GameUI = /*#__PURE__*/ function() {
 
                 // Add villain image to top right (no frame)
                 const villainImg = document.createElement('img');
-                villainImg.src = 'https://rosebud.ai/assets/a89e644d-f766-4df6-bda0-21b69d616bda.png?lids';
+                villainImg.src = './assets/villain.png';
                 villainImg.alt = 'Villain';
                 villainImg.style.position = 'absolute';
                 villainImg.style.top = '20px';

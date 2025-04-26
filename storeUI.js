@@ -327,16 +327,16 @@ export var StoreUI = /*#__PURE__*/ function() {
                 
                 switch(name.toLowerCase()) {
                     case 'tank':
-                        image.src = 'https://play.rosebud.ai/assets/tank.png?ib3S';
+                        image.src = './assets/tank.png';
                         break;
                     case 'turret':
-                        image.src = 'https://play.rosebud.ai/assets/turret-removebg-preview.png?lqIk';
+                        image.src = './assets/turret.png';
                         break;
                     case 'mech':
-                        image.src = 'https://play.rosebud.ai/assets/mech.png?cqDA';
+                        image.src = './assets/mech.png';
                         break;
                     default:
-                        image.src = 'https://play.rosebud.ai/assets/Duke.png?5eMi';
+                        image.src = './assets/Duke.png';
                 }
                 card.appendChild(image);
 

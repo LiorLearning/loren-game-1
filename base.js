@@ -37,7 +37,7 @@ export var Base = /*#__PURE__*/ function() {
                 // Main structure
                 // Load base texture
                 var textureLoader = new THREE.TextureLoader();
-                textureLoader.load('https://play.rosebud.ai/assets/base_nobg.png?sNAw', function(texture) {
+                textureLoader.load('./assets/base.png', function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     texture.minFilter = THREE.LinearFilter;
                     // Create sprite material

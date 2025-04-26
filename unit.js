@@ -90,16 +90,16 @@ export var Unit = /*#__PURE__*/ function() {
                 var textureUrl;
                 switch(this.type){
                     case 'Tank':
-                        textureUrl = 'https://play.rosebud.ai/assets/tank.png?ib3S';
+                        textureUrl = './assets/tank.png';
                         break;
                     case 'Mech':
-                        textureUrl = 'https://play.rosebud.ai/assets/mech.png?cqDA';
+                        textureUrl = './assets/mech.png';
                         break;
                     case 'Turret':
-                        textureUrl = 'https://play.rosebud.ai/assets/turret-removebg-preview.png?lqIk';
+                        textureUrl = './assets/turret.png';
                         break;
                     default:
-                        textureUrl = 'https://play.rosebud.ai/assets/Duke.png?5eMi';
+                        textureUrl = './assets/Duke.png';
                 }
                 texture.load(textureUrl, function(tex) {
                     tex.colorSpace = THREE.SRGBColorSpace;
