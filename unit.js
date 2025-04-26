@@ -33,7 +33,9 @@ export var Unit = /*#__PURE__*/ function() {
         this.game.gameUI.updatePlayerPower(this.power);
         // --- Smooth movement additions ---
         this.targetY = 0;
+        this.targetX = 0; // Target X position
         this.velocityY = 0;
+        this.velocityX = 0; // X velocity
         this.smoothMoveSpeed = 0.18; // Lower = smoother
         this.maxMoveSpeed = 32; // px per frame
         this.friction = 0.3; // Even higher friction for velocity damping
@@ -162,6 +164,7 @@ export var Unit = /*#__PURE__*/ function() {
                 // Position closer to the left side (near base)
                 unitGroup.position.set(-this.game.width * 0.20, 0, 0);
                 this.position.copy(unitGroup.position);
+                this.targetX = this.position.x; // Initialize targetX with current position
                 this.mesh = unitGroup;
                 this.game.scene.add(this.mesh);
                 
@@ -187,6 +190,40 @@ export var Unit = /*#__PURE__*/ function() {
                     this.position.y = Math.max(Math.min(this.position.y, this.game.height / 2 - 80), -this.game.height / 2 + 80);
                     this.mesh.position.y = this.position.y;
                 }
+                
+                // Smooth X movement
+                if (typeof this.targetX === 'number') {
+                    let dx = this.targetX - this.position.x;
+                    // Step-wise friction: use strong friction when nearly stopped
+                    let frictionToUse = Math.abs(this.velocityX) < this.stopThreshold ? this.stopFriction : this.friction;
+                    this.velocityX = this.velocityX * frictionToUse + dx * this.smoothMoveSpeed;
+                    // Clamp max speed
+                    if (this.velocityX > this.maxMoveSpeed) this.velocityX = this.maxMoveSpeed;
+                    if (this.velocityX < -this.maxMoveSpeed) this.velocityX = -this.maxMoveSpeed;
+                    // Move
+                    this.position.x += this.velocityX;
+                    // Clamp to bounds
+                    this.position.x = Math.max(Math.min(this.position.x, this.game.width / 2 - 80), -this.game.width / 2 + 80);
+                    this.mesh.position.x = this.position.x;
+                }
+                
+                // Check for ammo box collisions
+                if (this.game.enemyManager && this.game.enemyManager.ammoBoxes) {
+                    for (let i = this.game.enemyManager.ammoBoxes.length - 1; i >= 0; i--) {
+                        const ammoBox = this.game.enemyManager.ammoBoxes[i];
+                        const distance = this.position.distanceTo(ammoBox.position);
+                        if (distance < 80) { // Collision radius
+                            // Show math problem when near ammo box
+                            this.game.mathProblem.showProblem();
+                            
+                            // Remove ammo box
+                            this.game.scene.remove(ammoBox.mesh);
+                            this.game.enemyManager.ammoBoxes.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                
                 // Update projectiles
                 for(var i = this.projectiles.length - 1; i >= 0; i--){
                     var projectile = this.projectiles[i];
@@ -204,23 +241,31 @@ export var Unit = /*#__PURE__*/ function() {
         {
             key: "handleKeyInput",
             value: function handleKeyInput(key) {
-                var moveStep = 30; // How far to move per key press (target, smaller for finer movement)
-                // Movement controls
+                var moveStep = 40; // Increased move step for smoother movement
+                
+                // Movement controls - vertical
                 if (key === 'ArrowUp' || key === 'w') {
                     this.targetY = Math.min((this.targetY || this.position.y) + moveStep, this.game.height / 2 - 80);
                 }
                 if (key === 'ArrowDown' || key === 's') {
                     this.targetY = Math.max((this.targetY || this.position.y) - moveStep, -this.game.height / 2 + 80);
                 }
+                
+                // Movement controls - horizontal (now using smooth movement)
+                if (key === 'ArrowLeft' || key === 'a') {
+                    this.targetX = Math.max((this.targetX || this.position.x) - moveStep, -this.game.width / 2 + 80);
+                    this.changeDirection('left');
+                    this.lastMoveDirection = 'left';
+                }
+                if (key === 'ArrowRight' || key === 'd') {
+                    this.targetX = Math.min((this.targetX || this.position.x) + moveStep, this.game.width / 2 - 80);
+                    this.changeDirection('right');
+                    this.lastMoveDirection = 'right';
+                }
+                
                 // Shooting
                 if (key === ' ' && this.ammo > 0) {
                     this.shoot();
-                }
-                // Remove left direction capability
-                // Always force right direction (where the crabs are coming from)
-                if (key === 'ArrowRight') {
-                    this.changeDirection('right');
-                    this.lastMoveDirection = 'right';
                 }
             }
         },

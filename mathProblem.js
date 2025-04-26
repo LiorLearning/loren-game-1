@@ -156,6 +156,12 @@ export var MathProblem = /*#__PURE__*/ function() {
                     this.game.audioManager.playMathCorrect();
                 }
                 
+                // Show visual effect for ammo added
+                if (this.game.enemyManager) {
+                    const playerPosition = this.game.activeUnit.position.clone();
+                    this.game.enemyManager.showAmmoCollectedEffect(playerPosition);
+                }
+                
                 this.deactivateScreen(1000);
             }
         },

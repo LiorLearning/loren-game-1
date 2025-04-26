@@ -107,7 +107,7 @@ export var GameUI = /*#__PURE__*/ function() {
                 this.ammoCounter.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
                 this.ammoCounter.style.borderRadius = '10px';
                 this.ammoCounter.style.fontSize = '1.2em';
-                this.ammoCounter.innerHTML = '\n      <div style="font-size: 1.2em;">Unit: <span id="unitName">-</span></div>\n      <div style="font-size: 1.2em;">Ammo: <span id="ammoCount">0</span></div>\n      <div style="font-size: 1.2em; margin-top: 10px;">Press \'M\' for math problem to get ammo</div>\n    ';
+                this.ammoCounter.innerHTML = '\n      <div style="font-size: 1.2em;">Unit: <span id="unitName">-</span></div>\n      <div style="font-size: 1.2em;">Ammo: <span id="ammoCount">0</span></div>\n      <div style="font-size: 1.2em; margin-top: 10px;">Press \'M\' for math problem to get ammo</div>\n      <div style="font-size: 1.2em; margin-top: 10px;">Move with Arrow Keys or WASD</div>\n      <div style="font-size: 1.2em; margin-top: 5px;">Find ammo boxes for extra ammo!</div>\n    ';
                 this.uiContainer.appendChild(this.ammoCounter);
                 // Create screens containers
                 this.screens = {};
@@ -258,7 +258,7 @@ export var GameUI = /*#__PURE__*/ function() {
                 content.style.maxWidth = '800px';
                 content.style.fontSize = '1.2em';
                 content.style.textAlign = 'center';
-                content.innerHTML = '\n      <h1 style="color: #5ff; margin-bottom: 20px;">Loren\'s Base Defense</h1>\n      <p style="margin-bottom: 15px;">Defend your underwater base against waves of enemy crabs!</p>\n      <ul style="text-align: left; margin-bottom: 20px; list-style-type: none; padding-left: 0;">\n        <li>• Each wave sends 6 crabs (5 regular + 1 leader)</li>\n        <li>• Deploy one unit per wave to defend your base</li>\n        <li>• Solve math problems to reload your ammo</li>\n        <li>• Earn Deployment Points (DP) to unlock new units</li>\n      </ul>\n      <button id="startGameBtn" style="padding: 10px 20px; background: #5ff; color: #003366; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">START GAME</button>\n    ';
+                content.innerHTML = '\n      <h1 style="color: #5ff; margin-bottom: 20px;">Loren\'s Base Defense</h1>\n      <p style="margin-bottom: 15px;">Defend your underwater base against waves of enemy crabs!</p>\n      <ul style="text-align: left; margin-bottom: 20px; list-style-type: none; padding-left: 0;">\n        <li>• Each wave sends 6 crabs (5 regular + 1 leader)</li>\n        <li>• Deploy one unit per wave to defend your base</li>\n        <li>• Use arrow keys or WASD to move in all directions</li>\n        <li>• Collect ammo boxes dropped by defeated enemies</li>\n        <li>• Solve math problems to get +3 ammo when near boxes</li>\n        <li>• Earn Deployment Points (DP) to unlock new units</li>\n      </ul>\n      <button id="startGameBtn" style="padding: 10px 20px; background: #5ff; color: #003366; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">START GAME</button>\n    ';
                 this.screens.start.appendChild(content);
                 this.screens.start.style.display = 'flex';
                 document.getElementById('startGameBtn').addEventListener('click', function() {

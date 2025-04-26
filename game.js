@@ -204,7 +204,18 @@ export var Game = /*#__PURE__*/ function() {
             value: function animate() {
                 var _this = this;
                 if (this.gameOver) return;
+                
+                // Calculate delta time for frame rate independence
+                const currentTime = performance.now();
+                if (!this.lastFrameTime) this.lastFrameTime = currentTime;
+                this.deltaTime = (currentTime - this.lastFrameTime) / 1000; // in seconds
+                this.lastFrameTime = currentTime;
+                
+                // Cap very high delta times (e.g., after tab switch)
+                if (this.deltaTime > 0.1) this.deltaTime = 0.016; // Default to 60fps
+                
                 requestAnimationFrame(this.animate.bind(this));
+                
                 // Update particles
                 this.particles.children.forEach(function(particle) {
                     particle.position.y += particle.userData.speedY;
@@ -214,11 +225,13 @@ export var Game = /*#__PURE__*/ function() {
                         particle.position.x = Math.random() * _this.width - _this.width / 2;
                     }
                 });
+                
                 // Update game entities
                 if (this.isWaveActive) {
                     this.enemyManager.update();
                     if (this.activeUnit) this.activeUnit.update();
                 }
+                
                 // Render
                 this.renderer.render(this.scene, this.camera);
             }
@@ -279,30 +292,137 @@ export var Game = /*#__PURE__*/ function() {
                 this.deploymentPoints += waveDP;
                 this.gameUI.updateDP(this.deploymentPoints);
                 
-                // Upgrade base after each wave
-                if (this.base) {
-                    this.base.upgradeBase();
+                // Check if we need to transition to stage 2
+                // Base at level 4 (or higher), player has a Mech, wave defeated
+                const shouldTransition = this.base.baseLevel >= 4 && 
+                                         this.selectedUnit === 'Mech' && 
+                                         this.unlockedUnits.has('Mech');
+                
+                if (shouldTransition) {
+                    this.transitionToStage2();
+                } else {
+                    // Upgrade base after each wave
+                    if (this.base) {
+                        this.base.upgradeBase();
+                    }
+                    
+                    // Increment wave number
+                    this.currentWave++;
+                    
+                    // Cleanup
+                    this.enemyManager.clearEnemies();
+                    if (this.activeUnit) {
+                        this.scene.remove(this.activeUnit.mesh);
+                        this.activeUnit = null;
+                    }
+                    
+                    // Reset base health after each wave
+                    if (this.base) {
+                        this.base.health = this.base.maxHealth;
+                        this.base.updateHealthBar();
+                        this.gameUI.updateBaseHealth(this.base.health);
+                    }
+                    
+                    // Show store
+                    this.showStore();
                 }
+            }
+        },
+            
+        {
+            key: "transitionToStage2",
+            value: function transitionToStage2() {
+                // Create a transition overlay
+                const overlay = document.createElement('div');
+                overlay.style.position = 'absolute';
+                overlay.style.left = '0';
+                overlay.style.top = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+                overlay.style.display = 'flex';
+                overlay.style.flexDirection = 'column';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '1000';
                 
-                // Increment wave number
-                this.currentWave++;
+                // Create title text
+                const title = document.createElement('h1');
+                title.textContent = 'STAGE 2 REACHED!';
+                title.style.color = '#5ff';
+                title.style.fontSize = '3em';
+                title.style.marginBottom = '20px';
+                title.style.textShadow = '0 0 10px #0ff, 0 0 20px #0ff';
+                overlay.appendChild(title);
                 
-                // Cleanup
-                this.enemyManager.clearEnemies();
-                if (this.activeUnit) {
-                    this.scene.remove(this.activeUnit.mesh);
-                    this.activeUnit = null;
-                }
+                // Create description text
+                const description = document.createElement('p');
+                description.textContent = 'Congratulations! Your base is now at maximum level and your Mech is ready for the next stage!';
+                description.style.color = '#fff';
+                description.style.fontSize = '1.5em';
+                description.style.marginBottom = '40px';
+                description.style.textAlign = 'center';
+                description.style.maxWidth = '80%';
+                overlay.appendChild(description);
                 
-                // Reset base health after each wave
-                if (this.base) {
-                    this.base.health = this.base.maxHealth;
-                    this.base.updateHealthBar();
-                    this.gameUI.updateBaseHealth(this.base.health);
-                }
+                // Create continue button
+                const continueButton = document.createElement('button');
+                continueButton.textContent = 'CONTINUE TO STAGE 2';
+                continueButton.style.padding = '15px 30px';
+                continueButton.style.fontSize = '1.2em';
+                continueButton.style.backgroundColor = '#0088ff';
+                continueButton.style.color = 'white';
+                continueButton.style.border = 'none';
+                continueButton.style.borderRadius = '5px';
+                continueButton.style.cursor = 'pointer';
+                continueButton.style.boxShadow = '0 0 10px #0ff';
+                overlay.appendChild(continueButton);
                 
-                // Show store
-                this.showStore();
+                // Add to document
+                document.body.appendChild(overlay);
+                
+                // Handle click to continue
+                continueButton.addEventListener('click', () => {
+                    // Change background
+                    const textureLoader = new THREE.TextureLoader();
+                    textureLoader.load('./assets/background2.png', (texture) => {
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        this.scene.background = texture;
+                    });
+                    
+                    // TODO: Change user to a ship when that asset is available
+                    // No ship asset found in assets so we'll just note this
+                    console.log('Would change user to ship here if asset was available');
+                    
+                    // Remove overlay
+                    document.body.removeChild(overlay);
+                    
+                    // Continue game flow
+                    // Increment wave number
+                    this.currentWave++;
+                    
+                    // Cleanup
+                    this.enemyManager.clearEnemies();
+                    if (this.activeUnit) {
+                        this.scene.remove(this.activeUnit.mesh);
+                        this.activeUnit = null;
+                    }
+                    
+                    // Reset base health
+                    if (this.base) {
+                        this.base.health = this.base.maxHealth;
+                        this.base.updateHealthBar();
+                        this.gameUI.updateBaseHealth(this.base.health);
+                    }
+                    
+                    // Show store to continue
+                    this.showStore();
+                    
+                    // Play sound if possible
+                    if (this.audioManager) {
+                        this.audioManager.playCorrect();
+                    }
+                });
             }
         },
         {

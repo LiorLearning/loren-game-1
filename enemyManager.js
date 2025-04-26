@@ -28,6 +28,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
         _class_call_check(this, EnemyManager);
         this.game = game;
         this.enemies = [];
+        this.ammoBoxes = []; // Array to store ammo boxes
         this.enemiesPerWave = 5; // 4 regular + 1 leader
         this.spawnRate = 2000; // Spawn every 2 seconds
         this.enemiesSpawned = 0;
@@ -42,6 +43,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
             key: "init",
             value: function init() {
                 this.enemies = [];
+                this.ammoBoxes = [];
                 this.spawnX = this.game.width * 0.48;
                 this.spawnRate = 2000;
                 this.enemiesPerWave = 5;
@@ -184,7 +186,109 @@ export var EnemyManager = /*#__PURE__*/ function() {
                             this.checkWaveCompletion();
                         }
                     }
+                    
+                    // Update ammo boxes
+                    this.updateAmmoBoxes();
                 }
+            }
+        },
+        
+        {
+            key: "updateAmmoBoxes",
+            value: function updateAmmoBoxes() {
+                // If no active unit, no need to check for collisions
+                if (!this.game.activeUnit) return;
+                
+                const unit = this.game.activeUnit;
+                
+                // Check each ammo box
+                for (let i = this.ammoBoxes.length - 1; i >= 0; i--) {
+                    const ammoBox = this.ammoBoxes[i];
+                    
+                    // Animate ammo box - bobbing up and down
+                    if (ammoBox.mesh) {
+                        ammoBox.mesh.position.y += Math.sin(ammoBox.lifeTime * 0.1) * 0.2;
+                        
+                        // Rotate the ammo box
+                        ammoBox.mesh.rotation.z += 0.01;
+                        
+                        // Glow effect pulsing
+                        if (ammoBox.mesh.children.length > 1) {
+                            const glowSprite = ammoBox.mesh.children[1];
+                            const pulseScale = 0.8 + 0.2 * Math.sin(ammoBox.lifeTime * 0.2);
+                            glowSprite.scale.set(80 * pulseScale, 80 * pulseScale, 1);
+                            
+                            // Pulsing opacity
+                            if (glowSprite.material) {
+                                glowSprite.material.opacity = 0.2 + 0.2 * Math.sin(ammoBox.lifeTime * 0.1);
+                            }
+                        }
+                    }
+                    
+                    // Increment lifetime and check if expired
+                    ammoBox.lifeTime++;
+                    if (ammoBox.lifeTime > ammoBox.maxLifeTime) {
+                        // Flash before disappearing
+                        if (ammoBox.mesh.children.length > 0) {
+                            // Toggle visibility for flashing effect
+                            if (ammoBox.lifeTime % 10 < 5) {
+                                ammoBox.mesh.children.forEach(child => {
+                                    child.visible = true;
+                                });
+                            } else {
+                                ammoBox.mesh.children.forEach(child => {
+                                    child.visible = false;
+                                });
+                            }
+                        }
+                        
+                        // Remove after additional flashing time
+                        if (ammoBox.lifeTime > ammoBox.maxLifeTime + 60) {
+                            this.game.scene.remove(ammoBox.mesh);
+                            this.ammoBoxes.splice(i, 1);
+                        }
+                    }
+                }
+            }
+        },
+        
+        {
+            key: "showAmmoCollectedEffect",
+            value: function showAmmoCollectedEffect(position) {
+                // Create a text notification at the ammo box position
+                const ammoText = document.createElement('div');
+                ammoText.textContent = "+1 AMMO";
+                ammoText.style.position = 'absolute';
+                ammoText.style.left = `${position.x + window.innerWidth / 2}px`;
+                ammoText.style.top = `${-position.y + window.innerHeight / 2}px`;
+                ammoText.style.transform = 'translate(-50%, -50%)';
+                ammoText.style.color = '#ffff00';
+                ammoText.style.fontSize = '20px';
+                ammoText.style.fontWeight = 'bold';
+                ammoText.style.textShadow = '2px 2px 4px rgba(0,0,0,0.7)';
+                ammoText.style.zIndex = '1000';
+                
+                document.body.appendChild(ammoText);
+                
+                // Animate the text
+                let opacity = 1;
+                let posY = -position.y + window.innerHeight / 2;
+                
+                const animateText = () => {
+                    opacity -= 0.03;
+                    posY -= 1.5;
+                    
+                    ammoText.style.opacity = opacity;
+                    ammoText.style.top = `${posY}px`;
+                    
+                    if (opacity > 0) {
+                        requestAnimationFrame(animateText);
+                    } else {
+                        document.body.removeChild(ammoText);
+                    }
+                };
+                
+                requestAnimationFrame(animateText);
             }
         },
         {
@@ -225,6 +329,10 @@ export var EnemyManager = /*#__PURE__*/ function() {
                             setTimeout(function() {
                                 document.body.removeChild(damageIndicator);
                             }, 1000);
+                            
+                            // Create ammo box at enemy's position
+                            _this.createAmmoBox(enemy.position.clone());
+                            
                             _this.game.scene.remove(enemy.mesh);
                             _this.enemies.splice(i, 1);
                             _this.enemiesDefeated++;
@@ -272,8 +380,90 @@ export var EnemyManager = /*#__PURE__*/ function() {
                     }
                 });
                 this.enemies = [];
+                
+                // Remove all ammo boxes from the scene
+                this.ammoBoxes.forEach(ammoBox => {
+                    if (ammoBox && ammoBox.mesh) {
+                        this.game.scene.remove(ammoBox.mesh);
+                    }
+                });
+                this.ammoBoxes = [];
+                
                 this.enemiesSpawned = 0;
                 this.enemiesDefeated = 0;
+            }
+        },
+        {
+            key: "createAmmoBox",
+            value: function createAmmoBox(position) {
+                // Create ammo box at enemy's position when defeated
+                const ammoBoxGroup = new THREE.Group();
+                
+                // Load ammo box texture
+                var textureLoader = new THREE.TextureLoader();
+                textureLoader.setCrossOrigin('Anonymous');
+                
+                textureLoader.load('./assets/ammo_box.png', (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    texture.minFilter = THREE.LinearFilter;
+                    
+                    // Create sprite material with ammo box texture
+                    var spriteMaterial = new THREE.SpriteMaterial({
+                        map: texture,
+                        transparent: true,
+                        opacity: 1,
+                        alphaTest: 0.5,
+                        blending: THREE.NormalBlending,
+                        depthTest: true,
+                        depthWrite: false
+                    });
+                    
+                    // Create sprite
+                    var ammoBoxSprite = new THREE.Sprite(spriteMaterial);
+                    ammoBoxSprite.scale.set(60, 60, 1); // Set appropriate size
+                    ammoBoxSprite.center.set(0.5, 0.5);
+                    
+                    // Add sprite to group
+                    ammoBoxGroup.add(ammoBoxSprite);
+                    
+                    // Create glow effect
+                    var glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                        color: 0xffff00,
+                        transparent: true,
+                        opacity: 0.3,
+                        blending: THREE.AdditiveBlending
+                    }));
+                    glowSprite.scale.set(80, 80, 1);
+                    glowSprite.center.set(0.5, 0.5);
+                    ammoBoxGroup.add(glowSprite);
+                    
+                }, undefined, (error) => {
+                    console.error('Error loading ammo box texture:', error);
+                    
+                    // Fallback if texture fails to load
+                    const boxGeometry = new THREE.BoxGeometry(20, 20, 20);
+                    const boxMaterial = new THREE.MeshBasicMaterial({
+                        color: 0xffaa00,
+                        wireframe: true
+                    });
+                    
+                    const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+                    ammoBoxGroup.add(boxMesh);
+                });
+                
+                // Position ammo box at the enemy's last position
+                ammoBoxGroup.position.copy(position);
+                
+                // Add to scene
+                this.game.scene.add(ammoBoxGroup);
+                
+                // Add to ammo boxes array
+                this.ammoBoxes.push({
+                    mesh: ammoBoxGroup,
+                    position: ammoBoxGroup.position,
+                    lifeTime: 0,
+                    maxLifeTime: 300  // Lifetime in frames (about 5 seconds at 60fps)
+                });
             }
         }
     ]);
