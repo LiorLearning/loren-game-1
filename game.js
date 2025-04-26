@@ -294,9 +294,9 @@ export var Game = /*#__PURE__*/ function() {
                 
                 // Check if we need to transition to stage 2
                 // Base at level 4 (or higher), player has a Mech, wave defeated
-                const shouldTransition = this.base.baseLevel >= 4 && 
-                                         this.selectedUnit === 'Mech' && 
-                                         this.unlockedUnits.has('Mech');
+                const shouldTransition = this.base.baseLevel >= 0;
+                                        //  this.selectedUnit === 'Mech' && 
+                                        //  this.unlockedUnits.has('Mech');
                 
                 if (shouldTransition) {
                     this.transitionToStage2();
