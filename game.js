@@ -91,6 +91,10 @@ export var Game = /*#__PURE__*/ function() {
         this.playerPower = 10;
         this.enemyPower = 10;
         this.pendingUpgrade = null;
+        
+        // Track key states for continuous movement
+        this.keys = {};
+        
         // Initialize systems
         this.initScene();
         this.initGameSystems();
@@ -115,7 +119,20 @@ export var Game = /*#__PURE__*/ function() {
             key: "initEventListeners",
             value: function initEventListeners() {
                 window.addEventListener('resize', this.onWindowResize.bind(this));
-                window.addEventListener('keydown', this.handleKeyInput.bind(this));
+                
+                // Track key down and up events for continuous movement
+                window.addEventListener('keydown', (event) => {
+                    // Track key state
+                    this.keys[event.key] = true;
+                    
+                    // Also handle single press events
+                    this.handleKeyInput(event);
+                });
+                
+                window.addEventListener('keyup', (event) => {
+                    // Remove key from tracked keys
+                    this.keys[event.key] = false;
+                });
             }
         },
         {
@@ -298,7 +315,18 @@ export var Game = /*#__PURE__*/ function() {
                                         //  this.selectedUnit === 'Mech' && 
                                         //  this.unlockedUnits.has('Mech');
                 
-                if (shouldTransition) {
+                // Check if we've completed one wave in stage 2
+                const isStage2FirstWaveCompleted = 
+                    this.scene.background && 
+                    this.scene.background.image && 
+                    this.scene.background.image.src.includes('background2.png') && 
+                    this.currentWave > 1;
+                
+                if (isStage2FirstWaveCompleted) {
+                    // Show end of stage 2 banner after completing one wave in stage 2
+                    this.showStage2CompleteBanner();
+                    return;
+                } else if (shouldTransition) {
                     this.transitionToStage2();
                 } else {
                     // Upgrade base after each wave
@@ -312,6 +340,9 @@ export var Game = /*#__PURE__*/ function() {
                     // Cleanup
                     this.enemyManager.clearEnemies();
                     if (this.activeUnit) {
+                        if (typeof this.activeUnit.cleanup === 'function') {
+                            this.activeUnit.cleanup();
+                        }
                         this.scene.remove(this.activeUnit.mesh);
                         this.activeUnit = null;
                     }
@@ -326,6 +357,39 @@ export var Game = /*#__PURE__*/ function() {
                     // Show store
                     this.showStore();
                 }
+            }
+        },
+        
+        {
+            key: "showStage2CompleteBanner",
+            value: function showStage2CompleteBanner() {
+                // Create end of stage 2 banner
+                const endBanner = document.createElement('div');
+                endBanner.style.position = 'absolute';
+                endBanner.style.top = '50%';
+                endBanner.style.left = '50%';
+                endBanner.style.transform = 'translate(-50%, -50%)';
+                endBanner.style.padding = '20px';
+                endBanner.style.backgroundColor = 'rgba(0, 20, 50, 0.9)';
+                endBanner.style.border = '3px solid #5ff';
+                endBanner.style.borderRadius = '10px';
+                endBanner.style.color = 'white';
+                endBanner.style.fontSize = '1.5em';
+                endBanner.style.textAlign = 'center';
+                endBanner.style.boxShadow = '0 0 20px rgba(0, 255, 255, 0.5)';
+                endBanner.style.zIndex = '1001';
+                endBanner.innerHTML = `
+                    <h2 style="color: #5ff; margin-bottom: 15px; text-shadow: 0 0 10px #0ff;">Great job, Loren!</h2>
+                    <p style="margin-bottom: 15px;">Come back in the next session to defeat the final wave.</p>
+                    <p style="color: #ffcc00; font-weight: bold;">Your adventure will continue soon!</p>
+                `;
+                document.body.appendChild(endBanner);
+                
+                // Set timeout to remove the banner and show game over screen
+                setTimeout(() => {
+                    document.body.removeChild(endBanner);
+                    this.endGame(true); // End with victory
+                }, 5000); // Show for 5 seconds
             }
         },
             
@@ -390,9 +454,46 @@ export var Game = /*#__PURE__*/ function() {
                         this.scene.background = texture;
                     });
                     
-                    // TODO: Change user to a ship when that asset is available
-                    // No ship asset found in assets so we'll just note this
-                    console.log('Would change user to ship here if asset was available');
+                    // Change user to a ship
+                    this.selectedUnit = 'Ship';
+                    
+                    // Force player to sea level by setting initial Y position
+                    // This will be maintained by the unit.js update function
+                    if (this.activeUnit) {
+                        this.activeUnit.position.y = -125;
+                        this.activeUnit.mesh.position.y = -125;
+                    }
+                    
+                    // Transform base to surface base
+                    if (this.base) {
+                        // Update the base with a new texture instead of removing it
+                        if (this.base.mesh) {
+                            const textureLoader = new THREE.TextureLoader();
+                            textureLoader.load('./assets/surface-base.png', (texture) => {
+                                texture.colorSpace = THREE.SRGBColorSpace;
+                                texture.minFilter = THREE.LinearFilter;
+                                
+                                // Create new material with the surface-base texture
+                                const spriteMaterial = new THREE.SpriteMaterial({
+                                    map: texture,
+                                    transparent: true,
+                                    alphaTest: 0.5,
+                                    blending: THREE.NormalBlending,
+                                    depthTest: true,
+                                    depthWrite: false
+                                });
+                                
+                                // Update the base sprite material
+                                if (this.base.mesh.children.length > 0) {
+                                    this.base.mesh.children[0].material = spriteMaterial;
+                                }
+                                
+                                // Reset base health for stage 2
+                                this.base.health = this.base.maxHealth;
+                                this.base.updateHealthBar();
+                            });
+                        }
+                    }
                     
                     // Remove overlay
                     document.body.removeChild(overlay);
@@ -404,19 +505,20 @@ export var Game = /*#__PURE__*/ function() {
                     // Cleanup
                     this.enemyManager.clearEnemies();
                     if (this.activeUnit) {
+                        if (typeof this.activeUnit.cleanup === 'function') {
+                            this.activeUnit.cleanup();
+                        }
                         this.scene.remove(this.activeUnit.mesh);
                         this.activeUnit = null;
                     }
                     
-                    // Reset base health
+                    // Update base health UI
                     if (this.base) {
-                        this.base.health = this.base.maxHealth;
-                        this.base.updateHealthBar();
                         this.gameUI.updateBaseHealth(this.base.health);
                     }
                     
-                    // Show store to continue
-                    this.showStore();
+                    // Start new wave immediately instead of showing store
+                    this.startNewWave(true);
                     
                     // Play sound if possible
                     if (this.audioManager) {
@@ -491,6 +593,9 @@ export var Game = /*#__PURE__*/ function() {
                 this.gameOver = true;
                 this.isWaveActive = false;
                 if (this.activeUnit) {
+                    if (typeof this.activeUnit.cleanup === 'function') {
+                        this.activeUnit.cleanup();
+                    }
                     this.scene.remove(this.activeUnit.mesh);
                     this.activeUnit = null;
                 }
@@ -549,6 +654,9 @@ export var Game = /*#__PURE__*/ function() {
                 this.gameOver = false;
                 
                 if (this.activeUnit) {
+                    if (typeof this.activeUnit.cleanup === 'function') {
+                        this.activeUnit.cleanup();
+                    }
                     this.scene.remove(this.activeUnit.mesh);
                     this.activeUnit = null;
                 }

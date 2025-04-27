@@ -108,28 +108,34 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 // Create enemy sprite
                 var enemyGroup = new THREE.Group();
                 
-                // Load crab texture
+                // Check if we're in stage 2 (Ship stage)
+                const isStage2 = this.game.selectedUnit === 'Ship';
+                
+                // Load appropriate texture based on stage
                 var textureLoader = new THREE.TextureLoader();
                 textureLoader.setCrossOrigin('Anonymous');
-                var crabTexture = textureLoader.load('./assets/crab.png', 
+                
+                // In stage 2, use enemy-ship.png, otherwise use crab.png
+                const textureUrl = isStage2 ? './assets/enemy-ship.png' : './assets/crab.png';
+                var enemyTexture = textureLoader.load(textureUrl, 
                     // Success callback
                     (texture) => {
                         texture.colorSpace = THREE.SRGBColorSpace;
-                        console.log('[DEBUG] Crab texture loaded successfully');
+                        console.log(`[DEBUG] ${isStage2 ? 'Enemy ship' : 'Crab'} texture loaded successfully`);
                     },
                     // Progress callback
                     undefined,
                     // Error callback
                     (error) => {
-                        console.error('Error loading crab texture:', error);
+                        console.error(`Error loading ${isStage2 ? 'enemy ship' : 'crab'} texture:`, error);
                     }
                 );
                 
                 // Set power: double for leader
-                const crabPower = isLeader ? this.enemyPower * 1.5 : this.enemyPower;
+                const enemyPower = isLeader ? this.enemyPower * 1.5 : this.enemyPower;
                 // Create sprite material
                 var spriteMaterial = new THREE.SpriteMaterial({
-                    map: crabTexture,
+                    map: enemyTexture,
                     transparent: true,
                     alphaTest: 0.5,
                     color: isLeader ? 0xffaa33 : 0xff6666,
@@ -138,33 +144,42 @@ export var EnemyManager = /*#__PURE__*/ function() {
                     depthWrite: false
                 });
                 
-                // Create sprite
-                var crabSprite = new THREE.Sprite(spriteMaterial);
-                var size = isLeader ? 120 * 1.5 : 90; // Leader is 1.5x bigger
-                crabSprite.scale.set(size, size, 1);
-                crabSprite.center.set(0.5, 0.5);
-                enemyGroup.add(crabSprite);
+                // Create sprite with appropriate size based on stage and leader status
+                var enemySprite = new THREE.Sprite(spriteMaterial);
                 
-                // Position at spawn point with random y
-                var yPos = Math.random() * (this.game.height * 0.2) - this.game.height * 0.1;
+                // Size adjustments for different enemy types
+                var size;
+                if (isStage2) {
+                    size = isLeader ? 180 : 140; // Ships are bigger
+                } else {
+                    size = isLeader ? 120 * 1.5 : 90; // Underwater enemies (crabs)
+                }
+                
+                enemySprite.scale.set(size, size, 1);
+                enemySprite.center.set(0.5, 0.5);
+                enemyGroup.add(enemySprite);
+                
+                // Position at spawn point
+                // In stage 2, all ships are at sea level (slightly below 0)
+                var yPos = isStage2 ? -125 : Math.random() * (this.game.height * 0.2) - this.game.height * 0.1;
                 enemyGroup.position.set(this.game.width * 0.48, yPos, 0);
                 this.game.scene.add(enemyGroup);
                 
-                // Health is number of hits required: ceil(crabby power / unit power)
+                // Health is number of hits required: ceil(enemy power / unit power)
                 const unitPower = this.unitPowerForWave || 10;
-                const hitsRequired = Math.ceil(crabPower / unitPower);
+                const hitsRequired = Math.ceil(enemyPower / unitPower);
                 // Calculate speed multiplier: 1.1^level, capped at 1.5x
                 const baseSpeed = isLeader ? 50 : 62.5;
                 const speedMultiplier = Math.min(1.2, Math.pow(1.05, this.currentWave - 1));
-                const crabSpeed = baseSpeed * speedMultiplier;
+                const enemySpeed = baseSpeed * speedMultiplier;
                 return {
                     mesh: enemyGroup,
                     health: hitsRequired,
                     maxHealth: hitsRequired,
-                    speed: crabSpeed,
+                    speed: enemySpeed,
                     position: enemyGroup.position,
                     isLeader: isLeader,
-                    power: crabPower
+                    power: enemyPower
                 };
             }
         },
@@ -173,9 +188,20 @@ export var EnemyManager = /*#__PURE__*/ function() {
             value: function update() {
                 // Move enemies toward base (only if game is not paused)
                 if (!this.game.isPaused) {
+                    // Check if we're in stage 2 (Ship stage)
+                    const isStage2 = this.game.selectedUnit === 'Ship';
+                    
                     for(var i = this.enemies.length - 1; i >= 0; i--){
                         var enemy = this.enemies[i];
+                        
+                        // Move enemies horizontally toward base
                         enemy.position.x -= enemy.speed * (this.game.deltaTime || 0.016); // Frame-rate independent movement
+                        
+                        // In stage 2, ensure all enemies stay at sea level (slightly below 0)
+                        if (isStage2) {
+                            enemy.position.y = -125;
+                        }
+                        
                         // Check if enemy reached the base
                         if (enemy.position.x <= this.game.base.position.x + this.game.width * 0.1) {
                             this.game.base.takeDamage(5);
