@@ -167,7 +167,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 
                 // Health is number of hits required: ceil(enemy power / unit power)
                 const unitPower = this.unitPowerForWave || 10;
-                const hitsRequired = Math.ceil(enemyPower / unitPower);
+                const hitsRequired = isLeader ? 5 : Math.ceil(enemyPower / unitPower); // Leader always takes 3 hits
                 // Calculate speed multiplier: 1.1^level, capped at 1.5x
                 const baseSpeed = isLeader ? 50 : 62.5;
                 const speedMultiplier = Math.min(1.2, Math.pow(1.05, this.currentWave - 1));
@@ -344,7 +344,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                         // If enemy defeated
                         if (enemy.health <= 0) {
                             var damageIndicator = document.createElement('div');
-                            damageIndicator.textContent = `Hit! (${enemy.maxHealth} hits required)`;
+                            damageIndicator.textContent = `Defeated! (${enemy.maxHealth} hits required)`;
                             damageIndicator.style.position = 'absolute';
                             damageIndicator.style.color = '#ff0';
                             damageIndicator.style.fontSize = '24px';
@@ -356,8 +356,13 @@ export var EnemyManager = /*#__PURE__*/ function() {
                                 document.body.removeChild(damageIndicator);
                             }, 1000);
                             
-                            // Create ammo box at enemy's position
-                            _this.createAmmoBox(enemy.position.clone());
+                            // Check if we're in stage 2 (Ship stage)
+                            const isStage2 = _this.game.selectedUnit === 'Ship';
+                            
+                            // Create ammo box at enemy's position only if not in stage 2
+                            if (!isStage2) {
+                                _this.createAmmoBox(enemy.position.clone());
+                            }
                             
                             _this.game.scene.remove(enemy.mesh);
                             _this.enemies.splice(i, 1);
@@ -367,6 +372,20 @@ export var EnemyManager = /*#__PURE__*/ function() {
                         } else {
                             // Visual feedback for damage
                             _this.flashEnemyDamage(enemy);
+                            
+                            // Show damage indicator for remaining health
+                            var healthIndicator = document.createElement('div');
+                            healthIndicator.textContent = `Hit! (${enemy.maxHealth - enemy.health}/${enemy.maxHealth})`;
+                            healthIndicator.style.position = 'absolute';
+                            healthIndicator.style.color = '#fff';
+                            healthIndicator.style.fontSize = '20px';
+                            healthIndicator.style.fontWeight = 'bold';
+                            healthIndicator.style.left = `${enemy.position.x + window.innerWidth / 2}px`;
+                            healthIndicator.style.top = `${-enemy.position.y + window.innerHeight / 2 - 30}px`;
+                            document.body.appendChild(healthIndicator);
+                            setTimeout(function() {
+                                document.body.removeChild(healthIndicator);
+                            }, 800);
                         }
                         return { v: true };
                     }
@@ -392,7 +411,19 @@ export var EnemyManager = /*#__PURE__*/ function() {
             key: "checkWaveCompletion",
             value: function checkWaveCompletion() {
                 if (this.enemiesDefeated >= this.enemiesPerWave) {
-                    this.game.completeWave();
+                    // Check if we're in stage 2 (Ship stage)
+                    const isStage2 = this.game.scene.background && 
+                                     this.game.scene.background.image && 
+                                     this.game.scene.background.image.src.includes('background2.png') &&
+                                     this.game.selectedUnit === 'Ship';
+                                    
+                    if (isStage2) {
+                        console.log('[DEBUG] Stage 2 completed');
+                        // Show victory screen instead of regular wave completion
+                        this.game.gameUI.showGameOverScreen(true); // true indicates victory
+                    } else {
+                        this.game.completeWave();
+                    }
                 }
             }
         },

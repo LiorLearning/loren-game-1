@@ -336,56 +336,19 @@ export var GameUI = /*#__PURE__*/ function() {
         },
         {
             key: "setupGameOverScreen",
-            value: function setupGameOverScreen(isVictory) {
-                const gameOverScreen = document.createElement('div');
-                gameOverScreen.id = 'gameOverScreen';
-                gameOverScreen.style.position = 'absolute';
-                gameOverScreen.style.top = '0';
-                gameOverScreen.style.left = '0';
-                gameOverScreen.style.width = '100%';
-                gameOverScreen.style.height = '100%';
-                gameOverScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                gameOverScreen.style.display = 'none';
-                gameOverScreen.style.flexDirection = 'column';
-                gameOverScreen.style.justifyContent = 'center';
-                gameOverScreen.style.alignItems = 'center';
-                gameOverScreen.style.zIndex = '1000';
-                gameOverScreen.style.color = 'white';
-                gameOverScreen.style.fontSize = '2em';
-                gameOverScreen.style.textAlign = 'center';
-
-                const message = isVictory ? 'Victory!' : 'Game Over';
-                const color = isVictory ? '#00ff00' : '#ff0000';
+            value: function setupGameOverScreen() {
+                var _this = this;
+                var content = document.createElement('div');
+                content.style.backgroundColor = 'rgba(0, 50, 100, 0.9)';
+                content.style.padding = '30px';
+                content.style.borderRadius = '15px';
+                content.style.width = '70%';
+                content.style.maxWidth = '800px';
+                content.style.fontSize = '1.2em';
+                content.style.textAlign = 'center';
                 
-                gameOverScreen.innerHTML = `
-                    <h1 style="color: ${color}; margin-bottom: 20px; text-shadow: 0 0 10px ${color};">${message}</h1>
-                    <p style="margin-bottom: 30px;">Final Score: ${this.game.score}</p>
-                    <button id="playAgainButton" style="
-                        padding: 15px 30px;
-                        font-size: 1.2em;
-                        background-color: #4CAF50;
-                        color: white;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        transition: background-color 0.3s;
-                    ">Play Again</button>
-                `;
-
-                document.body.appendChild(gameOverScreen);
-
-                // Add click handler for play again button
-                const playAgainButton = document.getElementById('playAgainButton');
-                playAgainButton.addEventListener('click', () => {
-                    // Remove game over screen
-                    document.body.removeChild(gameOverScreen);
-                    
-                    // Reset game state
-                    this.game.resetGame();
-                    
-                    // Start new game
-                    this.game.startWave();
-                });
+                this.screens.gameOver.appendChild(content);
+                this.gameOverContent = content;
             }
         },
         {
@@ -436,20 +399,108 @@ export var GameUI = /*#__PURE__*/ function() {
         {
             key: "showGameOverScreen",
             value: function showGameOverScreen(win) {
-                var title = document.getElementById('gameOverTitle');
-                var text = document.getElementById('gameOverText');
-                var finalWave = document.getElementById('finalWave');
-                if (win) {
-                    title.textContent = 'Victory!';
-                    title.style.color = '#5ff';
-                    text.textContent = 'You have successfully defended Loren\'s base!';
-                } else {
-                    title.textContent = 'Game Over';
-                    title.style.color = '#f55';
-                    text.textContent = 'Your base has been destroyed by the crabs.';
+                // Update the content of the game over screen
+                const message = win ? 'Victory!' : 'Game Over';
+                const color = win ? '#5dff5d' : '#ff5d5d';
+                const bgColor = win ? 'rgba(0, 80, 30, 0.9)' : 'rgba(80, 0, 30, 0.9)';
+                
+                // Make sure we have the gameOverContent element
+                if (!this.gameOverContent) {
+                    this.gameOverContent = document.createElement('div');
+                    this.screens.gameOver.appendChild(this.gameOverContent);
                 }
-                finalWave.textContent = this.game.currentWave;
+                
+                // Update styles
+                this.gameOverContent.style.backgroundColor = bgColor;
+                this.gameOverContent.style.padding = '40px';
+                this.gameOverContent.style.borderRadius = '20px';
+                this.gameOverContent.style.width = '80%';
+                this.gameOverContent.style.maxWidth = '800px';
+                this.gameOverContent.style.fontSize = '1.3em';
+                this.gameOverContent.style.textAlign = 'center';
+                this.gameOverContent.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.5)';
+                this.gameOverContent.style.border = `3px solid ${color}`;
+                
+                let nextStageMessage = '';
+                let statsMessage = '';
+                
+                if (win) {
+                    nextStageMessage = `
+                        <div style="margin: 25px 0; padding: 15px; background-color: rgba(255, 204, 0, 0.2); border-radius: 10px; border-left: 5px solid #ffcc00;">
+                            <p style="color: #ffcc00; font-weight: bold; font-size: 1.1em;">
+                                Congratulations! The next stage to upgrade your ship will be unlocked in the next session.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    // Add some stats about the game
+                    statsMessage = `
+                        <div style="margin: 20px 0; padding: 15px; background-color: rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                            <h3 style="margin-bottom: 10px; color: #8df">Game Stats</h3>
+                            <p>Waves Completed: <span style="font-weight: bold; color: #8df">${this.game.currentWave - 1}</span></p>
+                            <p>Enemies Defeated: <span style="font-weight: bold; color: #8df">${this.game.enemyManager ? this.game.enemyManager.enemiesDefeated : 0}</span></p>
+                        </div>
+                    `;
+                }
+                
+                
+                this.gameOverContent.innerHTML = `
+                    <h1 style="color: ${color}; margin-bottom: 20px; text-shadow: 0 0 15px ${color}; font-size: 2.5em;">${message}</h1>
+                    <p style="margin-bottom: 30px; font-size: 1.2em; color: #fff;">You ${win ? 'completed' : 'reached'} wave ${this.game.currentWave}!</p>
+                    ${statsMessage}
+                    ${nextStageMessage}
+                    <button id="playAgainButton" style="
+                        padding: 18px 36px;
+                        margin-top: 15px;
+                        font-size: 1.3em;
+                        font-weight: bold;
+                        background-color: ${win ? '#4CAF50' : '#5d8aff'};
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                    ">Play Again</button>
+                `;
+
+                // Show the game over screen with a fade-in effect
                 this.screens.gameOver.style.display = 'flex';
+                this.screens.gameOver.style.opacity = '0';
+                this.screens.gameOver.style.transition = 'opacity 0.5s';
+                setTimeout(() => {
+                    this.screens.gameOver.style.opacity = '1';
+                }, 50);
+
+                // Add click handler for play again button with hover effect
+                const playAgainButton = document.getElementById('playAgainButton');
+                playAgainButton.addEventListener('mouseover', () => {
+                    playAgainButton.style.backgroundColor = win ? '#5dbd60' : '#4a78e0';
+                    playAgainButton.style.transform = 'scale(1.05)';
+                });
+                playAgainButton.addEventListener('mouseout', () => {
+                    playAgainButton.style.backgroundColor = win ? '#4CAF50' : '#5d8aff';
+                    playAgainButton.style.transform = 'scale(1)';
+                });
+                playAgainButton.addEventListener('click', () => {
+                    // Play button sound if available
+                    if (this.game.audioManager) {
+                        this.game.audioManager.playButton();
+                    }
+                    
+                    // Fade out effect
+                    this.screens.gameOver.style.opacity = '0';
+                    setTimeout(() => {
+                        // Hide game over screen
+                        this.screens.gameOver.style.display = 'none';
+                        
+                        // Reset game state
+                        this.game.resetGame();
+                        
+                        // Show start screen
+                        this.showStartScreen();
+                    }, 500);
+                });
             }
         },
         {
