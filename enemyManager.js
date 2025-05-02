@@ -170,8 +170,10 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 const hitsRequired = isLeader ? 5 : Math.ceil(enemyPower / unitPower); // Leader always takes 3 hits
                 // Calculate speed multiplier: 1.1^level, capped at 1.5x
                 const baseSpeed = isLeader ? 60 : 60;
+                // Increase speed for ships in stage 2
+                const adjustedBaseSpeed = isStage2 ? baseSpeed * 1.75 : baseSpeed;
                 const speedMultiplier = Math.min(1.2, Math.pow(1.05, this.currentWave - 1));
-                const enemySpeed = baseSpeed * speedMultiplier;
+                const enemySpeed = adjustedBaseSpeed * speedMultiplier;
                 return {
                     mesh: enemyGroup,
                     health: hitsRequired,
@@ -186,8 +188,8 @@ export var EnemyManager = /*#__PURE__*/ function() {
         {
             key: "update",
             value: function update() {
-                // Move enemies toward base (only if game is not paused)
-                if (!this.game.isPaused) {
+                // Move enemies toward base (only if game is not paused and no math problem is active)
+                if (!this.game.isPaused && !(this.game.mathProblem && this.game.mathProblem.isActive)) {
                     // Check if we're in stage 2 (Ship stage)
                     const isStage2 = this.game.selectedUnit === 'Ship';
                     

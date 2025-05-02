@@ -424,6 +424,13 @@ export var Unit = /*#__PURE__*/ function() {
         {
             key: "update",
             value: function update() {
+                // Don't update movement if the game is paused or math problem is active
+                if (this.game.isPaused || (this.game.mathProblem && this.game.mathProblem.isActive)) {
+                    // Still update projectiles so they remain visible when paused
+                    this.updateProjectiles();
+                    return;
+                }
+                
                 // In stage 2, ships (user and enemies) should stay at sea level
                 const isStage2 = this.type === 'Ship';
                 
@@ -506,8 +513,19 @@ export var Unit = /*#__PURE__*/ function() {
                 }
                 
                 // Update projectiles
+                this.updateProjectiles();
+            }
+        },
+        {
+            key: "updateProjectiles",
+            value: function updateProjectiles() {
                 for(var i = this.projectiles.length - 1; i >= 0; i--){
                     var projectile = this.projectiles[i];
+                    
+                    // Skip projectile updates if game is paused
+                    if (this.game.isPaused || (this.game.mathProblem && this.game.mathProblem.isActive)) {
+                        continue;
+                    }
                     
                     // Handle trajectory-based projectiles
                     if (projectile.userData.isOnTrajectory) {
@@ -612,6 +630,11 @@ export var Unit = /*#__PURE__*/ function() {
         {
             key: "handleKeyInput",
             value: function handleKeyInput(key) {
+                // Do not process any input if the game is paused or math problem is active
+                if (this.game.isPaused || (this.game.mathProblem && this.game.mathProblem.isActive)) {
+                    return;
+                }
+
                 var moveStep = 40; // Increased move step for smoother movement
                 const isStage2 = this.type === 'Ship';
                 
