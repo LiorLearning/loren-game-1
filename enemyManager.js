@@ -204,7 +204,8 @@ export var EnemyManager = /*#__PURE__*/ function() {
                         
                         // Check if enemy reached the base
                         if (enemy.position.x <= this.game.base.position.x + this.game.width * 0.1) {
-                            this.game.base.takeDamage(5);
+                            // One hit game over - base is destroyed immediately
+                            this.game.base.takeDamage(this.game.base.health);
                             this.game.scene.remove(enemy.mesh);
                             this.enemies.splice(i, 1);
                             // Count as defeated for wave completion check
