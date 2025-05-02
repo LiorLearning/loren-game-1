@@ -709,8 +709,19 @@ export var Game = /*#__PURE__*/ function() {
                 if (this.activeUnit && this.isWaveActive) {
                     this.activeUnit.handleKeyInput(event.key);
                 }
+                
+                // Only allow math problem with 'M' when ammo is depleted AND no ammo boxes are on screen
                 if (event.key.toLowerCase() === 'm' && this.isWaveActive && this.activeUnit) {
-                    this.mathProblem.showProblem();
+                    console.log(this.enemyManager.ammoBoxes);
+                    const ammoBoxesOnScreen = this.enemyManager && this.enemyManager.ammoBoxes && this.enemyManager.ammoBoxes.length > 0;
+                    
+                    // Only show math problem if ammo is depleted AND no ammo boxes are available to collect
+                    if (!ammoBoxesOnScreen) {
+                        this.mathProblem.showProblem();
+                    } else {
+                        console.log("Collect ammo boxes on screen before using math problems");
+                        // Optional: Show a visual hint to collect ammo boxes first
+                    }
                 }
             }
         },

@@ -80,29 +80,12 @@ export var MathProblem = /*#__PURE__*/ function() {
         {
             key: "generateProblem",
             value: function generateProblem() {
-                var maxNum = 10 + this.game.currentWave * 2;
-                var num1 = Math.floor(Math.random() * maxNum) + 1;
-                var num2 = Math.floor(Math.random() * maxNum) + 1;
-                var operations = [
-                    '+',
-                    '-',
-                    '×'
-                ];
-                var op = operations[Math.floor(Math.random() * operations.length)];
-                switch(op){
-                    case '+':
-                        this.currentProblem = "".concat(num1, " + ").concat(num2, " = ?");
-                        this.currentAnswer = num1 + num2;
-                        break;
-                    case '-':
-                        this.currentProblem = "".concat(Math.max(num1, num2), " - ").concat(Math.min(num1, num2), " = ?");
-                        this.currentAnswer = Math.abs(num1 - num2);
-                        break;
-                    case '×':
-                        this.currentProblem = "".concat(num1, " \xd7 ").concat(num2, " = ?");
-                        this.currentAnswer = num1 * num2;
-                        break;
-                }
+                // Generate single-digit multiplication problem (1x1 digit)
+                var num1 = Math.floor(Math.random() * 9) + 1; // 1-9
+                var num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+                
+                this.currentProblem = "".concat(num1, " \xd7 ").concat(num2, " = ?");
+                this.currentAnswer = num1 * num2;
             }
         },
         {
