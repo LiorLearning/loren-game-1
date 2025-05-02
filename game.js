@@ -167,6 +167,7 @@ export var Game = /*#__PURE__*/ function() {
                 // Scene setup
                 this.scene = new THREE.Scene();
                 var textureLoader = new THREE.TextureLoader();
+                // Since we've preloaded the textures, this will use the cached version
                 textureLoader.load('./assets/background.png', function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     _this.scene.background = texture;

@@ -217,7 +217,7 @@ export var Unit = /*#__PURE__*/ function() {
             value: function createUnitMesh() {
                 var _this = this;
                 var unitGroup = new THREE.Group();
-                // Create texture from Duke asset
+                // Create texture from asset - will use cached version since we've preloaded
                 var texture = new THREE.TextureLoader();
                 texture.setCrossOrigin('Anonymous');
                 var textureUrl;

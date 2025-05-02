@@ -50,10 +50,10 @@ export var Base = /*#__PURE__*/ function() {
             key: "loadBaseTexture",
             value: function loadBaseTexture(baseGroup) {
                 var _this = this;
-                // Load base texture based on current level
+                // Load base texture based on current level (will use cached version from preload)
                 var textureLoader = new THREE.TextureLoader();
-                const imageId = this.baseLevel < 4 ? this.baseLevel : 4;
-                textureLoader.load(`./assets/base${imageId}.png`, function(texture) {
+                const baseLevel = Math.min(this.baseLevel, 5); // Ensure it doesn't exceed 5
+                textureLoader.load(`./assets/base${baseLevel}.png`, function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     texture.minFilter = THREE.LinearFilter;
                     // Create sprite material
