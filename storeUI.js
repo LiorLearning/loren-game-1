@@ -138,6 +138,16 @@ export var StoreUI = /*#__PURE__*/ function() {
                     shipImage.style.display = 'block';
                     upgradesSection.appendChild(shipImage);
 
+                    // Add base image below ship
+                    const baseImage = document.createElement('img');
+                    baseImage.src = './assets/surface-base.png';
+                    baseImage.style.width = '250px';
+                    baseImage.style.height = '150px';
+                    baseImage.style.objectFit = 'contain';
+                    baseImage.style.margin = '0 auto 20px';
+                    baseImage.style.display = 'block';
+                    upgradesSection.appendChild(baseImage);
+
                     // Add all ship upgrades
                     this.game.store.shipUpgrades.forEach((upgrade, name) => {
                         this.createUpgradeCard(name, upgrade, upgradesGrid);
@@ -356,7 +366,7 @@ export var StoreUI = /*#__PURE__*/ function() {
                         image.src = './assets/mech.png';
                         break;
                     default:
-                        image.src = './assets/Duke.png';
+                        image.src = './assets/duke.png';
                 }
                 card.appendChild(image);
 

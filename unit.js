@@ -235,70 +235,78 @@ export var Unit = /*#__PURE__*/ function() {
                         textureUrl = './assets/user-ship.png';
                         break;
                     default:
-                        textureUrl = './assets/Duke.png';
+                        textureUrl = './assets/duke.png';
                 }
-                texture.load(textureUrl, function(tex) {
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    tex.minFilter = THREE.LinearFilter; // Disable mipmapping for crisp pixels
-                    // Create sprite with Duke texture
-                    var dukeMaterial = new THREE.SpriteMaterial({
-                        map: tex,
-                        transparent: true,
-                        opacity: 1,
-                        alphaTest: 0.5,
-                        // Need to explicitly enable alpha blending
-                        blending: THREE.NormalBlending,
-                        depthTest: true,
-                        depthWrite: false
-                    });
-                    var dukeSprite = new THREE.Sprite(dukeMaterial);
-                    var sprite = _this.type === 'Tank' ? new THREE.Sprite(dukeMaterial) : new THREE.Sprite(dukeMaterial);
-                    var width, height;
-                    switch(_this.type){
-                        case 'Tank':
-                            width = 180;
-                            height = 120;
-                            break;
-                        case 'Mech':
-                            width = 180;
-                            height = 180;
-                            break;
-                        case 'Turret':
-                            width = 150;
-                            height = 150;
-                            break;
-                        case 'Ship':
-                            width = 360;
-                            height = 200;
-                            break;
-                        default:
-                            width = 160;
-                            height = 120;
+                texture.load(textureUrl, 
+                    // Success callback
+                    function(tex) {
+                        tex.colorSpace = THREE.SRGBColorSpace;
+                        tex.minFilter = THREE.LinearFilter; // Disable mipmapping for crisp pixels
+                        console.log(`[DEBUG] ${_this.type} texture loaded successfully from ${textureUrl}`);
+                        // Create sprite with Duke texture
+                        var dukeMaterial = new THREE.SpriteMaterial({
+                            map: tex,
+                            transparent: true,
+                            opacity: 1,
+                            alphaTest: 0.5,
+                            // Need to explicitly enable alpha blending
+                            blending: THREE.NormalBlending,
+                            depthTest: true,
+                            depthWrite: false
+                        });
+                        var dukeSprite = new THREE.Sprite(dukeMaterial);
+                        var sprite = _this.type === 'Tank' ? new THREE.Sprite(dukeMaterial) : new THREE.Sprite(dukeMaterial);
+                        var width, height;
+                        switch(_this.type){
+                            case 'Tank':
+                                width = 180;
+                                height = 120;
+                                break;
+                            case 'Mech':
+                                width = 180;
+                                height = 180;
+                                break;
+                            case 'Turret':
+                                width = 150;
+                                height = 150;
+                                break;
+                            case 'Ship':
+                                width = 360;
+                                height = 200;
+                                break;
+                            default:
+                                width = 160;
+                                height = 120;
+                        }
+                        sprite.scale.set(width, height, 1);
+                        dukeSprite.position.z = 5;
+                        dukeSprite.center.set(0.5, 0.5);
+                        dukeSprite.renderOrder = 1;
+                        // Store original scale for flipping
+                        sprite.userData.originalScale = {
+                            x: width,
+                            y: height,
+                            sign: 1 // Track facing direction (1 = right, -1 = left)
+                        };
+                        unitGroup.add(sprite);
+                        // Turret (projectile emitter)
+                        var turret = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshBasicMaterial({
+                            color: 0xff0000,
+                            transparent: true,
+                            opacity: 0.5
+                        }));
+                        turret.position.set(25, 0, 0);
+                        turret.visible = false; // Hide turret for debugging
+                        unitGroup.add(turret);
+                        console.log('Duke sprite created:', dukeSprite);
+                    },
+                    // Progress callback  
+                    undefined,
+                    // Error callback
+                    function(err) {
+                        console.error(`Error loading ${_this.type} texture from ${textureUrl}:`, err);
                     }
-                    sprite.scale.set(width, height, 1);
-                    dukeSprite.position.z = 5;
-                    dukeSprite.center.set(0.5, 0.5);
-                    dukeSprite.renderOrder = 1;
-                    // Store original scale for flipping
-                    sprite.userData.originalScale = {
-                        x: width,
-                        y: height,
-                        sign: 1 // Track facing direction (1 = right, -1 = left)
-                    };
-                    unitGroup.add(sprite);
-                    // Turret (projectile emitter)
-                    var turret = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshBasicMaterial({
-                        color: 0xff0000,
-                        transparent: true,
-                        opacity: 0.5
-                    }));
-                    turret.position.set(25, 0, 0);
-                    turret.visible = false; // Hide turret for debugging
-                    unitGroup.add(turret);
-                    console.log('Duke sprite created:', dukeSprite);
-                }, undefined, function(err) {
-                    console.error('Error loading Duke texture:', err);
-                });
+                );
                 // Position ship 
                 if (this.type === 'Ship') {
                     // Fixed position in front of the base
