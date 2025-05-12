@@ -36,6 +36,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
         this.currentWave = 1;
         this.enemyPower = 10;
         this.spawnX = this.game.width * 0.48; // Spawn enemies at far right
+        this.unitPowerForWave = 10;
         this.init();
     }
     _create_class(EnemyManager, [
@@ -422,7 +423,7 @@ export var EnemyManager = /*#__PURE__*/ function() {
                                     
                     if (isStage2) {
                         console.log('[DEBUG] Stage 2 completed');
-                        // Show victory screen instead of regular wave completion
+                        // Show victory screen for stage 2
                         this.game.gameUI.showGameOverScreen(true); // true indicates victory
                     } else {
                         this.game.completeWave();

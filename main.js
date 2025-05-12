@@ -61,6 +61,7 @@ function preloadAssets() {
       './assets/user-ship.png',
       './assets/surface-base.png',
       './assets/kraken.png',
+      './assets/base0.png',
       './assets/base1.png',
       './assets/base2.png',
       './assets/base3.png',

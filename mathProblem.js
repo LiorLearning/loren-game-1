@@ -80,28 +80,28 @@ export var MathProblem = /*#__PURE__*/ function() {
         {
             key: "generateProblem",
             value: function generateProblem() {
-                var maxNum = 10 + this.game.currentWave * 2;
-                var num1 = Math.floor(Math.random() * maxNum) + 1;
-                var num2 = Math.floor(Math.random() * maxNum) + 1;
-                var operations = [
-                    '+',
-                    '-',
-                    '×'
-                ];
-                var op = operations[Math.floor(Math.random() * operations.length)];
-                switch(op){
-                    case '+':
-                        this.currentProblem = "".concat(num1, " + ").concat(num2, " = ?");
-                        this.currentAnswer = num1 + num2;
-                        break;
-                    case '-':
-                        this.currentProblem = "".concat(Math.max(num1, num2), " - ").concat(Math.min(num1, num2), " = ?");
-                        this.currentAnswer = Math.abs(num1 - num2);
-                        break;
-                    case '×':
-                        this.currentProblem = "".concat(num1, " \xd7 ").concat(num2, " = ?");
-                        this.currentAnswer = num1 * num2;
-                        break;
+                // Generate simple multiplication and division problems
+                const operations = ['×', '÷'];
+                const op = operations[Math.floor(Math.random() * operations.length)];
+                
+                let num1, num2, answer;
+                
+                if (op === '×') {
+                    // For multiplication, use numbers 1-12
+                    num1 = Math.floor(Math.random() * 12) + 1;
+                    num2 = Math.floor(Math.random() * 12) + 1;
+                    this.currentProblem = `${num1} × ${num2} = ?`;
+                    this.currentAnswer = num1 * num2;
+                } else {
+                    // For division, ensure clean division with no remainders
+                    // First generate the answer (1-12)
+                    answer = Math.floor(Math.random() * 12) + 1;
+                    // Then generate a multiplier (1-12)
+                    num2 = Math.floor(Math.random() * 12) + 1;
+                    // Calculate the first number to ensure clean division
+                    num1 = answer * num2;
+                    this.currentProblem = `${num1} ÷ ${num2} = ?`;
+                    this.currentAnswer = answer;
                 }
             }
         },

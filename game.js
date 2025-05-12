@@ -24,6 +24,7 @@ import { Unit } from './unit.js';
 import { EnemyManager } from './enemyManager.js';
 import { MathProblem } from './mathProblem.js';
 import { StoreUI } from './storeUI.js';
+import { GameStorage } from './storage.js';
 // Constants
 var STORE_ITEMS = {
     units: new Map([
@@ -105,15 +106,12 @@ export var Game = /*#__PURE__*/ function() {
         this.gameUI = null;
         this.gameOver = false;
         this.deploymentPoints = 0;
-        this.unlockedUnits = new Set([
-            'Duke',
-            'Mech'
-        ]);
-        this.selectedUnit = 'Mech';
+        this.unlockedUnits = new Set(['Duke']);  // Only Duke unlocked at start
+        this.selectedUnit = 'Duke';  // Start with Duke
         this.isWaveActive = false;
         this.isPaused = false;
         this.store = STORE_ITEMS;
-        this.playerPower = 40; // Mech power
+        this.playerPower = 10; // Duke power
         this.enemyPower = 10;
         this.pendingUpgrade = null;
         
@@ -124,6 +122,9 @@ export var Game = /*#__PURE__*/ function() {
         this.initScene();
         this.initGameSystems();
         this.initEventListeners();
+
+        // Reset any existing game state and start fresh
+        GameStorage.resetGameState();
     }
     _create_class(Game, [
         {
@@ -336,23 +337,21 @@ export var Game = /*#__PURE__*/ function() {
                 this.gameUI.updateDP(this.deploymentPoints);
                 
                 // Check if we need to transition to stage 2
-                // Since we start with level 4 base and mech, transition immediately after first wave
                 const shouldTransition = this.base.baseLevel >= 4 &&
                                         this.selectedUnit === 'Mech' && 
                                         this.unlockedUnits.has('Mech') &&
-                                        this.currentWave === 1;
+                                        this.currentWave === 5;  // Changed from 1 to 5
                 
-                // Check if we've completed one wave in stage 2
-                const isStage2FirstWaveCompleted = 
-                    this.scene.background && 
-                    this.scene.background.image && 
-                    this.scene.background.image.src.includes('background2.png') && 
-                    this.currentWave > 1;
+                // Check if we're in stage 2
+                const isStage2 = this.scene.background && 
+                                this.scene.background.image && 
+                                this.scene.background.image.src.includes('background2.png') &&
+                                this.selectedUnit === 'Ship';
                 
-                if (isStage2FirstWaveCompleted) {
-                    // Show stage 2 completion banner
-                    this.showStage2CompleteBanner();
-                    return;
+                if (isStage2) {
+                    // In stage 2, just increment wave and start next wave
+                    this.currentWave++;
+                    this.startNewWave(true);
                 } else if (shouldTransition) {
                     this.transitionToStage2();
                 } else {
@@ -381,9 +380,12 @@ export var Game = /*#__PURE__*/ function() {
                         this.gameUI.updateBaseHealth(this.base.health);
                     }
                     
-                    // Show store
+                    // Show store only in stage 1
                     this.showStore();
                 }
+
+                // Save game state after wave completion
+                this.saveGameState();
             }
         },
         
@@ -562,86 +564,73 @@ export var Game = /*#__PURE__*/ function() {
                     // Remove overlay
                     document.body.removeChild(overlay);
                     
-                    // Continue game flow
-                    // Increment wave number
-                    this.currentWave++;
-                    
-                    // Cleanup
-                    this.enemyManager.clearEnemies();
-                    if (this.activeUnit) {
-                        if (typeof this.activeUnit.cleanup === 'function') {
-                            this.activeUnit.cleanup();
-                        }
-                        this.scene.remove(this.activeUnit.mesh);
-                        this.activeUnit = null;
+                    // Hide any remaining store UI elements
+                    const waveCompleteScreen = this.gameUI.screens.waveComplete;
+                    if (waveCompleteScreen) {
+                        waveCompleteScreen.style.display = 'none';
+                    }
+                    const storeContainer = document.getElementById('storeContainer');
+                    if (storeContainer) {
+                        storeContainer.style.display = 'none';
                     }
                     
-                    // Update base health UI
-                    if (this.base) {
-                        this.gameUI.updateBaseHealth(this.base.health);
-                    }
-                    
-                    // Start new wave immediately instead of showing store
+                    // Start the game immediately
+                    this.isWaveActive = true;
+                    this.currentWave = 1; // Reset wave count for stage 2
                     this.startNewWave(true);
-                    
-                    // Play sound if possible
-                    if (this.audioManager) {
-                        this.audioManager.playCorrect();
-                    }
                 });
             }
         },
         {
             key: "showStore",
             value: function showStore() {
-                // Clear any existing store UI
-                if (this.storeUI && this.storeUI.container) {
-                    this.storeUI.container.innerHTML = '';
+                // Get the wave complete screen
+                const waveCompleteScreen = this.gameUI.screens.waveComplete;
+                if (waveCompleteScreen) {
+                    waveCompleteScreen.innerHTML = '';
+                    // Only add the store container, do not add floating header or DP text
+                    let storeContainer = document.createElement('div');
+                    storeContainer.id = 'storeContainer';
+                    waveCompleteScreen.appendChild(storeContainer);
+                    // Show the overlay
+                    waveCompleteScreen.style.display = 'flex';
                 }
-                
                 // Create new store UI if it doesn't exist
                 if (!this.storeUI) {
                     this.storeUI = new StoreUI(this);
                 }
-                
-                // Add store container to wave complete screen
-                let existingStoreContainer = document.getElementById('storeContainer');
-                if (!existingStoreContainer) {
-                    const newStoreContainer = document.createElement('div');
-                    newStoreContainer.id = 'storeContainer';
-                    newStoreContainer.style.width = '100%';
-                    newStoreContainer.style.height = '100%';
-                    newStoreContainer.style.position = 'absolute';
-                    newStoreContainer.style.top = '0';
-                    newStoreContainer.style.left = '0';
-                    newStoreContainer.style.background = 'rgba(0, 10, 20, 0.95)';
-                    newStoreContainer.style.backdropFilter = 'blur(10px)';
-                    newStoreContainer.style.display = 'flex';
-                    newStoreContainer.style.flexDirection = 'column';
-                    newStoreContainer.style.alignItems = 'center';
-                    newStoreContainer.style.padding = '40px 20px';
-                    newStoreContainer.style.overflowY = 'auto';
-                    newStoreContainer.style.opacity = '1';
-                    newStoreContainer.style.pointerEvents = 'auto';
-                    document.body.appendChild(newStoreContainer);
-                    existingStoreContainer = newStoreContainer;
-                }
-                
-                // Add store title
-                const storeTitle = document.createElement('h2');
-                storeTitle.textContent = this.selectedUnit === 'Ship' ? 'SHIP UPGRADE STORE' : 'DEPLOYMENT STORE';
-                storeTitle.style.color = '#5ff';
-                storeTitle.style.fontSize = '2em';
-                storeTitle.style.marginBottom = '30px';
-                storeTitle.style.textAlign = 'center';
-                this.storeUI.container.appendChild(storeTitle);
-                
                 // Render store UI
-                this.storeUI.render();
-                
-                // Add store UI to container
-                existingStoreContainer.innerHTML = '';
-                existingStoreContainer.appendChild(this.storeUI.container);
+                let storeContainer = document.getElementById('storeContainer');
+                if (storeContainer) {
+                    storeContainer.innerHTML = '';
+                    storeContainer.appendChild(this.storeUI.container);
+                    this.storeUI.render();
+                }
+            }
+        },
+        {
+            key: "loadSavedGameState",
+            value: function loadSavedGameState() {
+                const savedState = GameStorage.loadGameState();
+                if (savedState) {
+                    this.unlockedUnits = new Set(savedState.unlockedUnits);
+                    this.deploymentPoints = savedState.deploymentPoints;
+                    this.currentWave = savedState.currentWave;
+                    this.selectedUnit = savedState.selectedUnit;
+                    
+                    // Update UI with loaded state
+                    if (this.gameUI) {
+                        this.gameUI.updateDP(this.deploymentPoints);
+                        this.gameUI.updateWaveInfo(this.currentWave);
+                        this.gameUI.updateDisplayUnitName(this.selectedUnit);
+                    }
+                }
+            }
+        },
+        {
+            key: "saveGameState",
+            value: function saveGameState() {
+                GameStorage.saveGameState(this);
             }
         },
         {
@@ -667,6 +656,9 @@ export var Game = /*#__PURE__*/ function() {
                     this.pendingUpgrade = item;
                     this.audioManager.playButton();
                 }
+
+                // Save game state after purchase
+                this.saveGameState();
                 return true;
             }
         },
@@ -760,18 +752,20 @@ export var Game = /*#__PURE__*/ function() {
                 this.gameUI.updateWaveInfo(this.currentWave);
                 this.gameUI.updateDP(this.deploymentPoints);
                 
-                // Reset base health and level
+                // Reset base health and update texture for current wave
                 if (this.base) {
-                    this.base.baseLevel = 0;
                     this.base.maxHealth = 10;
                     this.base.health = this.base.maxHealth;
                     this.base.updateHealthBar();
                     
-                    // Reload base texture for level 0
+                    // Update base texture for current wave
                     if (this.base.mesh) {
                         this.base.loadBaseTexture(this.base.mesh);
                     }
                 }
+
+                // Reset saved game state
+                GameStorage.resetGameState();
                 
                 return true;
             }
@@ -822,6 +816,23 @@ export var Game = /*#__PURE__*/ function() {
                     });
                     this.enemyManager.enemiesDefeated++;
                 }
+            }
+        },
+        {
+            key: "startNextWave",
+            value: function startNextWave() {
+                this.currentWave++;
+                this.isWaveActive = true;
+                this.gameUI.updateWaveInfo(this.currentWave);
+                this.gameUI.updateDP(this.deploymentPoints);
+                
+                // Update base texture for new wave
+                if (this.base) {
+                    this.base.upgradeBase();
+                }
+                
+                // Start spawning enemies for the new wave
+                this.enemyManager.startWave(this.currentWave);
             }
         }
     ]);

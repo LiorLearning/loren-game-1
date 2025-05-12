@@ -385,15 +385,9 @@ export var GameUI = /*#__PURE__*/ function() {
         {
             key: "showWaveCompleteScreen",
             value: function showWaveCompleteScreen() {
-                var unitSelector = document.getElementById('unitSelector');
-                unitSelector.innerHTML = '';
-                this.updateUnitSelector();
-                // Set Duke as default if available
-                if (this.game.unlockedUnits.has('Duke')) {
-                    unitSelector.value = 'Duke';
-                }
-                document.getElementById('waveCompleteText').textContent = "Wave ".concat(this.game.currentWave - 1, " complete! Get ready for wave ").concat(this.game.currentWave, ".");
-                this.screens.waveComplete.style.display = 'flex';
+                // Hide the old floating text and DP
+                this.screens.waveComplete.innerHTML = '';
+                this.screens.waveComplete.style.display = 'none';
             }
         },
         {

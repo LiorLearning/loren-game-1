@@ -26,7 +26,6 @@ export var Base = /*#__PURE__*/ function() {
         this.health = 10;
         this.maxHealth = 10;
         this.position = new THREE.Vector3(-this.game.width * 0.38, 0, 0); // Moved base further right from 0.42
-        this.baseLevel = 4; // Start with base level 4
         this.createBaseMesh();
     }
     _create_class(Base, [
@@ -50,10 +49,10 @@ export var Base = /*#__PURE__*/ function() {
             key: "loadBaseTexture",
             value: function loadBaseTexture(baseGroup) {
                 var _this = this;
-                // Load base texture based on current level (will use cached version from preload)
+                // Load base texture based on current wave number
                 var textureLoader = new THREE.TextureLoader();
-                const baseLevel = Math.min(this.baseLevel, 5); // Ensure it doesn't exceed 5
-                textureLoader.load(`./assets/base${baseLevel}.png`, function(texture) {
+                const waveNumber = Math.min(this.game.currentWave, 4); // Ensure it doesn't exceed 4
+                textureLoader.load(`./assets/base${waveNumber}.png`, function(texture) {
                     texture.colorSpace = THREE.SRGBColorSpace;
                     texture.minFilter = THREE.LinearFilter;
                     // Create sprite material
@@ -174,26 +173,17 @@ export var Base = /*#__PURE__*/ function() {
         {
             key: "upgradeBase",
             value: function upgradeBase() {
-                // Maximum level is 5 (base0 to base5)
-                if (this.baseLevel < 5) {
-                    this.baseLevel++;
-                    
-                    // Show upgrade animation/effect
-                    this.showUpgradeEffect();
-                    
-                    // Load new texture based on level (base0.png -> base1.png -> base2.png -> base3.png -> base4.png)
-                    if (this.mesh) {
-                        this.loadBaseTexture(this.mesh);
-                    }
-                    
-                    // Increase max health with each upgrade
-                    this.maxHealth += 10;
-                    this.health = this.maxHealth;
-                    this.updateHealthBar();
-                    
-                    return true;
+                // Reset health for next wave
+                this.maxHealth = 10;
+                this.health = this.maxHealth;
+                this.updateHealthBar();
+                
+                // Load new texture based on next wave
+                if (this.mesh) {
+                    this.loadBaseTexture(this.mesh);
                 }
-                return false;
+                
+                return true;
             }
         },
         {
