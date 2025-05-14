@@ -113,7 +113,13 @@ export var Base = /*#__PURE__*/ function() {
         {
             key: "updateHealthBar",
             value: function updateHealthBar() {
-                var healthRatio = this.health / this.maxHealth;
+                // Ensure health values are valid numbers
+                if (isNaN(this.health) || isNaN(this.maxHealth)) {
+                    console.warn('Invalid health values detected:', { health: this.health, maxHealth: this.maxHealth });
+                    this.health = this.maxHealth = 10;
+                }
+                
+                var healthRatio = Math.max(0, Math.min(1, this.health / this.maxHealth));
                 this.healthBar.scale.x = healthRatio;
                 this.healthBar.position.x = -100 * (1 - healthRatio);
 
@@ -136,7 +142,13 @@ export var Base = /*#__PURE__*/ function() {
         {
             key: "takeDamage",
             value: function takeDamage(amount) {
-                this.health -= amount;
+                // Ensure amount is a valid number
+                if (isNaN(amount) || amount < 0) {
+                    console.warn('Invalid damage amount received:', amount);
+                    amount = 1; // Default to 1 damage
+                }
+                
+                this.health = Math.max(0, this.health - amount);
                 if (this.health <= 0) {
                     this.health = 0;
                     this.game.endGame(false);

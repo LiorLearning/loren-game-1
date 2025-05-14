@@ -133,7 +133,9 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 );
                 
                 // Set power: double for leader
-                const enemyPower = isLeader ? this.enemyPower * 1.5 : this.enemyPower;
+                const baseEnemyPower = isNaN(this.enemyPower) ? 10 : this.enemyPower;
+                const enemyPower = isLeader ? baseEnemyPower * 1.5 : baseEnemyPower;
+                
                 // Create sprite material
                 var spriteMaterial = new THREE.SpriteMaterial({
                     map: enemyTexture,
@@ -167,14 +169,16 @@ export var EnemyManager = /*#__PURE__*/ function() {
                 this.game.scene.add(enemyGroup);
                 
                 // Health is number of hits required: ceil(enemy power / unit power)
-                const unitPower = this.unitPowerForWave || 10;
-                const hitsRequired = isLeader ? 5 : Math.ceil(enemyPower / unitPower); // Leader always takes 3 hits
+                const unitPower = isNaN(this.unitPowerForWave) ? 10 : this.unitPowerForWave;
+                const hitsRequired = isLeader ? 5 : Math.max(1, Math.ceil(enemyPower / unitPower)); // Leader always takes 5 hits, minimum 1 hit for others
+                
                 // Calculate speed multiplier: 1.1^level, capped at 1.5x
                 const baseSpeed = isLeader ? 60 : 60;
                 // Increase speed for ships in stage 2
                 const adjustedBaseSpeed = isStage2 ? baseSpeed * 1.75 : baseSpeed;
                 const speedMultiplier = Math.min(1.2, Math.pow(1.05, this.currentWave - 1));
                 const enemySpeed = adjustedBaseSpeed * speedMultiplier;
+                
                 return {
                     mesh: enemyGroup,
                     health: hitsRequired,

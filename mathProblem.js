@@ -87,19 +87,37 @@ export var MathProblem = /*#__PURE__*/ function() {
                 let num1, num2, answer;
                 
                 if (op === '×') {
-                    // For multiplication, use numbers 1-12
-                    num1 = Math.floor(Math.random() * 12) + 1;
-                    num2 = Math.floor(Math.random() * 12) + 1;
+                    // For multiplication: 1 digit x 1 digit or 2 digit x 1 digit under 20
+                    // 50% chance for each format
+                    if (Math.random() < 0.5) {
+                        // 1 digit x 1 digit
+                        num1 = Math.floor(Math.random() * 9) + 1; // 1-9
+                        num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+                    } else {
+                        // 2 digit x 1 digit under 20
+                        // Sometimes use numbers ending in 0 to make it simpler
+                        if (Math.random() < 0.3) {
+                            num1 = Math.floor(Math.random() * 2) * 10; // 0 or 10
+                        } else {
+                            num1 = Math.floor(Math.random() * 19) + 1; // 1-19
+                        }
+                        num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+                    }
                     this.currentProblem = `${num1} × ${num2} = ?`;
                     this.currentAnswer = num1 * num2;
                 } else {
-                    // For division, ensure clean division with no remainders
-                    // First generate the answer (1-12)
-                    answer = Math.floor(Math.random() * 12) + 1;
-                    // Then generate a multiplier (1-12)
-                    num2 = Math.floor(Math.random() * 12) + 1;
+                    // For division: 2 digit by 1 digit division
+                    // First generate the answer (1-9)
+                    answer = Math.floor(Math.random() * 9) + 1;
+                    // Then generate a divisor (1-9)
+                    num2 = Math.floor(Math.random() * 9) + 1;
                     // Calculate the first number to ensure clean division
                     num1 = answer * num2;
+                    // Sometimes use numbers ending in 0 to make it simpler
+                    if (Math.random() < 0.3) {
+                        num1 = Math.floor(num1 / 10) * 10;
+                        answer = num1 / num2;
+                    }
                     this.currentProblem = `${num1} ÷ ${num2} = ?`;
                     this.currentAnswer = answer;
                 }

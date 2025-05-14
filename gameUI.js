@@ -258,26 +258,137 @@ export var GameUI = /*#__PURE__*/ function() {
                 content.style.maxWidth = '800px';
                 content.style.fontSize = '1.2em';
                 content.style.textAlign = 'center';
-                content.innerHTML = '\n      <h1 style="color: #5ff; margin-bottom: 20px;">Loren\'s Base Defense</h1>\n      <p style="margin-bottom: 15px;">Defend your underwater base against waves of enemy crabs!</p>\n      <ul style="text-align: left; margin-bottom: 20px; list-style-type: none; padding-left: 0;">\n        <li>• Each wave sends 6 crabs (5 regular + 1 leader)</li>\n        <li>• Deploy one unit per wave to defend your base</li>\n        <li>• Use arrow keys or WASD to move in all directions</li>\n        <li>• Collect ammo boxes dropped by defeated enemies</li>\n        <li>• Solve math problems to get +3 ammo when near boxes</li>\n        <li>• Earn Deployment Points (DP) to unlock new units</li>\n      </ul>\n      <button id="startGameBtn" style="padding: 10px 20px; background: #5ff; color: #003366; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">START GAME</button>\n    ';
+                content.innerHTML = `
+      <h1 style="color: #5ff; margin-bottom: 20px;">Loren's Base Defense</h1>
+      <div id="playerNameForm" style="margin-bottom: 20px;">
+        <input type="text" id="playerNameInput" placeholder="Enter your name" style="padding: 10px; width: 200px; margin-bottom: 10px; background: rgba(0, 20, 40, 0.8); color: white; border: 1px solid rgba(95, 255, 255, 0.3); border-radius: 5px;">
+        <div id="nameError" style="color: #ff5d5d; margin-bottom: 10px; height: 20px;"></div>
+      </div>
+      <p style="margin-bottom: 15px;">Defend your underwater base against waves of enemy crabs!</p>
+      <ul style="text-align: left; margin-bottom: 20px; list-style-type: none; padding-left: 0;">
+        <li>• Each wave sends 6 crabs (5 regular + 1 leader)</li>
+        <li>• Deploy one unit per wave to defend your base</li>
+        <li>• Use arrow keys or WASD to move in all directions</li>
+        <li>• Collect ammo boxes dropped by defeated enemies</li>
+        <li>• Solve math problems to get +3 ammo when near boxes</li>
+        <li>• Earn Deployment Points (DP) to unlock new units</li>
+      </ul>
+      <button id="startGameBtn" style="padding: 10px 20px; background: #5ff; color: #003366; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">START GAME</button>
+    `;
                 this.screens.start.appendChild(content);
                 this.screens.start.style.display = 'flex';
-                document.getElementById('startGameBtn').addEventListener('click', function() {
-                    // Enable audio context if available
-                    if (_this.game.audioManager && _this.game.audioManager.audioListener.context.state === 'suspended') {
-                        _this.game.audioManager.audioListener.context.resume().then(function() {
-                            console.log('AudioContext resumed successfully from start button');
+
+                // Add event listener for player name input
+                const playerNameInput = document.getElementById('playerNameInput');
+                const nameError = document.getElementById('nameError');
+                const startGameBtn = document.getElementById('startGameBtn');
+
+                // Disable start button initially
+                startGameBtn.disabled = true;
+                startGameBtn.style.opacity = '0.5';
+                startGameBtn.style.cursor = 'not-allowed';
+
+                // Wait for Supabase to be ready
+                const waitForSupabase = () => {
+                    return new Promise((resolve) => {
+                        if (window.GameData && window.GameData.ready) {
+                            resolve();
+                        } else {
+                            document.addEventListener('supabase-ready', () => {
+                                resolve();
+                            }, { once: true });
+                        }
+                    });
+                };
+
+                playerNameInput.addEventListener('input', function() {
+                    const name = this.value.trim();
+                    if (name.length >= 3) {
+                        nameError.textContent = '';
+                        startGameBtn.disabled = false;
+                        startGameBtn.style.opacity = '1';
+                        startGameBtn.style.cursor = 'pointer';
+                    } else {
+                        nameError.textContent = 'Name must be at least 3 characters long';
+                        startGameBtn.disabled = true;
+                        startGameBtn.style.opacity = '0.5';
+                        startGameBtn.style.cursor = 'not-allowed';
+                    }
+                });
+
+                startGameBtn.addEventListener('click', async function() {
+                    const playerName = playerNameInput.value.trim();
+                    if (playerName.length < 3) return;
+
+                    // Disable the button while processing
+                    startGameBtn.disabled = true;
+                    startGameBtn.style.opacity = '0.5';
+                    startGameBtn.style.cursor = 'not-allowed';
+                    nameError.textContent = 'Saving player data...';
+
+                    try {
+                        console.log('Starting save process...');
+                        console.log('Checking GameData:', window.GameData);
+                        
+                        // Wait for Supabase to be ready
+                        console.log('Waiting for Supabase...');
+                        await waitForSupabase();
+                        console.log('Supabase ready check complete');
+
+                        if (!window.GameData) {
+                            console.error('GameData is undefined');
+                            throw new Error('Game data system not initialized');
+                        }
+
+                        if (!window.GameData.saveUser) {
+                            console.error('saveUser function is undefined');
+                            throw new Error('Save user function not available');
+                        }
+
+                        console.log('Attempting to save user:', playerName);
+                        // Save user to Supabase
+                        const { data, error } = await window.GameData.saveUser(playerName);
+                        console.log('Save response:', { data, error });
+                        
+                        if (error) {
+                            console.error('Supabase save error:', error);
+                            nameError.textContent = 'Error saving player name. Please try again.';
+                            startGameBtn.disabled = false;
+                            startGameBtn.style.opacity = '1';
+                            startGameBtn.style.cursor = 'pointer';
+                            return;
+                        }
+
+                        console.log('User saved successfully, starting game...');
+
+                        // Enable audio context if available
+                        if (_this.game.audioManager && _this.game.audioManager.audioListener.context.state === 'suspended') {
+                            _this.game.audioManager.audioListener.context.resume().then(function() {
+                                console.log('AudioContext resumed successfully from start button');
+                            });
+                        }
+                        
+                        // Play button sound
+                        if (_this.game.audioManager) {
+                            _this.game.audioManager.playButton();
+                            // Start background music
+                            _this.game.audioManager.toggleBackgroundMusic(true);
+                        }
+                        
+                        _this.screens.start.style.display = 'none';
+                        _this.game.startNewWave(true);
+                    } catch (error) {
+                        console.error('Detailed error in game start:', {
+                            error: error,
+                            message: error.message,
+                            stack: error.stack,
+                            GameData: window.GameData
                         });
+                        nameError.textContent = 'Error starting game. Please try again.';
+                        startGameBtn.disabled = false;
+                        startGameBtn.style.opacity = '1';
+                        startGameBtn.style.cursor = 'pointer';
                     }
-                    
-                    // Play button sound
-                    if (_this.game.audioManager) {
-                        _this.game.audioManager.playButton();
-                        // Start background music
-                        _this.game.audioManager.toggleBackgroundMusic(true);
-                    }
-                    
-                    _this.screens.start.style.display = 'none';
-                    _this.game.startNewWave(true);
                 });
             }
         },
@@ -415,19 +526,8 @@ export var GameUI = /*#__PURE__*/ function() {
                 this.gameOverContent.style.boxShadow = '0 0 30px rgba(0, 0, 0, 0.5)';
                 this.gameOverContent.style.border = `3px solid ${color}`;
                 
-                let nextStageMessage = '';
                 let statsMessage = '';
-                
-                if (win) {
-                    nextStageMessage = `
-                        <div style="margin: 25px 0; padding: 15px; background-color: rgba(255, 204, 0, 0.2); border-radius: 10px; border-left: 5px solid #ffcc00;">
-                            <p style="color: #ffcc00; font-weight: bold; font-size: 1.1em;">
-                                Congratulations! The next stage to upgrade your ship will be unlocked in the next session.
-                            </p>
-                        </div>
-                    `;
-                } else {
-                    // Add some stats about the game
+                if (!win) {
                     statsMessage = `
                         <div style="margin: 20px 0; padding: 15px; background-color: rgba(255, 255, 255, 0.1); border-radius: 10px;">
                             <h3 style="margin-bottom: 10px; color: #8df">Game Stats</h3>
@@ -436,26 +536,56 @@ export var GameUI = /*#__PURE__*/ function() {
                         </div>
                     `;
                 }
-                
+
+                // Create the form HTML with scenario-specific messaging
+                const formHTML = `
+                    <div id="gameCreationForm" style="margin-top: 30px; text-align: left;">
+                        <h2 style="color: ${color}; margin-bottom: 20px; text-align: center;">${win ? 'Congratulations! Create Your Next Adventure!' : 'Create Your Own Game!'}</h2>
+                        
+                        <div id="formStep1" class="form-step">
+                            <h3 style="color: #8df; margin-bottom: 15px;">Step 1: Who will be your hero?</h3>
+                            <input type="text" id="heroInput" placeholder="Enter your hero's name" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0, 20, 40, 0.8); color: white; border: 1px solid rgba(95, 255, 255, 0.3); border-radius: 5px;">
+                            <button id="nextStep1" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Next</button>
+                        </div>
+
+                        <div id="formStep2" class="form-step" style="display: none;">
+                            <h3 style="color: #8df; margin-bottom: 15px;">Step 2: Who will be your villain?</h3>
+                            <input type="text" id="villainInput" placeholder="Enter your villain's name" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0, 20, 40, 0.8); color: white; border: 1px solid rgba(95, 255, 255, 0.3); border-radius: 5px;">
+                            <button id="nextStep2" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Next</button>
+                        </div>
+
+                        <div id="formStep3" class="form-step" style="display: none;">
+                            <h3 style="color: #8df; margin-bottom: 15px;">Step 3: What type of game will it be?</h3>
+                            <select id="gameTypeInput" style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0, 20, 40, 0.8); color: white; border: 1px solid rgba(95, 255, 255, 0.3); border-radius: 5px;">
+                                <option value="">Select game type...</option>
+                                <option value="battle">Battle</option>
+                                <option value="chase">Chase</option>
+                                <option value="building">Building and Crafting</option>
+                                <option value="platformer">Platformer</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <button id="nextStep3" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Next</button>
+                        </div>
+
+                        <div id="formStep4" class="form-step" style="display: none;">
+                            <h3 style="color: #8df; margin-bottom: 15px;">Step 4: What is the setting?</h3>
+                            <textarea id="settingInput" placeholder="Describe the environment..." style="width: 100%; padding: 10px; margin-bottom: 15px; background: rgba(0, 20, 40, 0.8); color: white; border: 1px solid rgba(95, 255, 255, 0.3); border-radius: 5px; min-height: 100px;"></textarea>
+                            <button id="submitForm" style="padding: 10px 20px; background: ${color}; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Submit</button>
+                        </div>
+
+                        <div id="formSuccess" class="form-step" style="display: none;">
+                            <h3 style="color: ${color}; margin-bottom: 15px; text-align: center;">Your response has been submitted!</h3>
+                            <p style="text-align: center; margin-bottom: 20px;">${win ? 'Come back in the next session to play your new adventure!' : 'Come back in the next session to play your own game!'}</p>
+                            <button id="playAgainButton" style="padding: 18px 36px; background: ${color}; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%;">Play Again</button>
+                        </div>
+                    </div>
+                `;
                 
                 this.gameOverContent.innerHTML = `
                     <h1 style="color: ${color}; margin-bottom: 20px; text-shadow: 0 0 15px ${color}; font-size: 2.5em;">${message}</h1>
                     <p style="margin-bottom: 30px; font-size: 1.2em; color: #fff;">You ${win ? 'completed' : 'reached'} wave ${this.game.currentWave}!</p>
                     ${statsMessage}
-                    ${nextStageMessage}
-                    <button id="playAgainButton" style="
-                        padding: 18px 36px;
-                        margin-top: 15px;
-                        font-size: 1.3em;
-                        font-weight: bold;
-                        background-color: ${win ? '#4CAF50' : '#5d8aff'};
-                        color: white;
-                        border: none;
-                        border-radius: 10px;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-                    ">Play Again</button>
+                    ${formHTML}
                 `;
 
                 // Show the game over screen with a fade-in effect
@@ -466,35 +596,87 @@ export var GameUI = /*#__PURE__*/ function() {
                     this.screens.gameOver.style.opacity = '1';
                 }, 50);
 
-                // Add click handler for play again button with hover effect
+                // Add form step navigation
+                const nextStep1 = document.getElementById('nextStep1');
+                const nextStep2 = document.getElementById('nextStep2');
+                const nextStep3 = document.getElementById('nextStep3');
+                const submitForm = document.getElementById('submitForm');
                 const playAgainButton = document.getElementById('playAgainButton');
-                playAgainButton.addEventListener('mouseover', () => {
-                    playAgainButton.style.backgroundColor = win ? '#5dbd60' : '#4a78e0';
-                    playAgainButton.style.transform = 'scale(1.05)';
-                });
-                playAgainButton.addEventListener('mouseout', () => {
-                    playAgainButton.style.backgroundColor = win ? '#4CAF50' : '#5d8aff';
-                    playAgainButton.style.transform = 'scale(1)';
-                });
-                playAgainButton.addEventListener('click', () => {
-                    // Play button sound if available
-                    if (this.game.audioManager) {
-                        this.game.audioManager.playButton();
+
+                nextStep1.addEventListener('click', () => {
+                    const heroInput = document.getElementById('heroInput');
+                    if (heroInput.value.trim()) {
+                        document.getElementById('formStep1').style.display = 'none';
+                        document.getElementById('formStep2').style.display = 'block';
                     }
-                    
-                    // Fade out effect
-                    this.screens.gameOver.style.opacity = '0';
-                    setTimeout(() => {
-                        // Hide game over screen
-                        this.screens.gameOver.style.display = 'none';
-                        
-                        // Reset game state
-                        this.game.resetGame();
-                        
-                        // Show start screen
-                        this.showStartScreen();
-                    }, 500);
                 });
+
+                nextStep2.addEventListener('click', () => {
+                    const villainInput = document.getElementById('villainInput');
+                    if (villainInput.value.trim()) {
+                        document.getElementById('formStep2').style.display = 'none';
+                        document.getElementById('formStep3').style.display = 'block';
+                    }
+                });
+
+                nextStep3.addEventListener('click', () => {
+                    const gameTypeInput = document.getElementById('gameTypeInput');
+                    if (gameTypeInput.value) {
+                        document.getElementById('formStep3').style.display = 'none';
+                        document.getElementById('formStep4').style.display = 'block';
+                    }
+                });
+
+                submitForm.addEventListener('click', () => {
+                    const heroInput = document.getElementById('heroInput');
+                    const villainInput = document.getElementById('villainInput');
+                    const gameTypeInput = document.getElementById('gameTypeInput');
+                    const settingInput = document.getElementById('settingInput');
+
+                    if (heroInput.value.trim() && villainInput.value.trim() && gameTypeInput.value && settingInput.value.trim()) {
+                        // Save form submission
+                        const formData = {
+                            hero: heroInput.value.trim(),
+                            villain: villainInput.value.trim(),
+                            gameType: gameTypeInput.value,
+                            setting: settingInput.value.trim(),
+                            scenario: win ? 'victory' : 'defeat',
+                            wave: this.game.currentWave
+                        };
+
+                        // Use the saveFormSubmission function from supabase.js
+                        if (window.GameData && window.GameData.saveFormSubmission) {
+                            window.GameData.saveFormSubmission(formData);
+                        }
+
+                        // Show success message
+                        document.getElementById('formStep4').style.display = 'none';
+                        document.getElementById('formSuccess').style.display = 'block';
+                    }
+                });
+
+                // Add click handler for play again button
+                if (playAgainButton) {
+                    playAgainButton.addEventListener('click', () => {
+                        // Play button sound if available
+                        if (this.game.audioManager) {
+                            this.game.audioManager.playButton();
+                        }
+                        
+                        // Fade out effect
+                        this.screens.gameOver.style.opacity = '0';
+                        setTimeout(() => {
+                            // Hide game over screen
+                            this.screens.gameOver.style.display = 'none';
+                            
+                            // Reset game state
+                            this.game.resetGame();
+                            
+                            // Show start screen
+                            this.showStartScreen();
+                        }, 500);
+                    });
+                }
             }
         },
         {

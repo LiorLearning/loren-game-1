@@ -69,16 +69,17 @@ export var Unit = /*#__PURE__*/ function() {
         {
             key: "setUnitStats",
             value: function setUnitStats() {
+                let basePower;
                 switch(this.type){
                     case 'Duke':
-                        this.power = 10;
+                        basePower = 10;
                         this.color = 0x00ffff;
                         break;
                     case 'Tank':
-                        this.power = 30;
+                        basePower = 30;
                         this.color = 0x555555;
                         console.log('[DEBUG] Tank initialized with:', {
-                            power: this.power,
+                            power: basePower,
                             size: {
                                 width: 200,
                                 height: 120
@@ -87,22 +88,24 @@ export var Unit = /*#__PURE__*/ function() {
                         });
                         break;
                     case 'Mech':
-                        this.power = 40;
+                        basePower = 40;
                         this.color = 0xaa0000;
                         break;
                     case 'Turret':
-                        this.power = 20;
+                        basePower = 20;
                         this.color = 0xffff00;
                         break;
                     case 'Ship':
-                        this.power = 50;
+                        basePower = 50;
                         this.color = 0x00aaff;
                         break;
                     default:
-                        this.power = 10;
+                        basePower = 10;
                         this.color = 0x00ffff;
                         break;
                 }
+                // Ensure power is a valid number
+                this.power = isNaN(basePower) ? 10 : basePower;
                 // Update UI with the unit's power
                 this.game.gameUI.updatePowerInfo(this.power, this.game.enemyPower);
                 this.game.gameUI.updatePlayerPower(this.power);
@@ -168,48 +171,6 @@ export var Unit = /*#__PURE__*/ function() {
                         }
                     }
                 }
-            }
-        },
-        {
-            key: "setUnitStats",
-            value: function setUnitStats() {
-                switch(this.type){
-                    case 'Duke':
-                        this.power = 10;
-                        this.color = 0x00ffff;
-                        break;
-                    case 'Tank':
-                        this.power = 30;
-                        this.color = 0x555555;
-                        console.log('[DEBUG] Tank initialized with:', {
-                            power: this.power,
-                            size: {
-                                width: 200,
-                                height: 120
-                            },
-                            asset: 'tank.png'
-                        });
-                        break;
-                    case 'Mech':
-                        this.power = 40;
-                        this.color = 0xaa0000;
-                        break;
-                    case 'Turret':
-                        this.power = 20;
-                        this.color = 0xffff00;
-                        break;
-                    case 'Ship':
-                        this.power = 50;
-                        this.color = 0x00aaff;
-                        break;
-                    default:
-                        this.power = 10;
-                        this.color = 0x00ffff;
-                        break;
-                }
-                // Update UI with the unit's power
-                this.game.gameUI.updatePowerInfo(this.power, this.game.enemyPower);
-                this.game.gameUI.updatePlayerPower(this.power);
             }
         },
         {
@@ -856,6 +817,11 @@ export var Unit = /*#__PURE__*/ function() {
         {
             key: "upgradePower",
             value: function upgradePower(newPower) {
+                // Ensure newPower is a valid number
+                if (isNaN(newPower) || newPower <= 0) {
+                    console.warn('Invalid power value received:', newPower);
+                    newPower = this.power || 10; // Fallback to current power or default
+                }
                 this.power = newPower;
                 // Defensive: Only update material if mesh and children exist
                 if (
